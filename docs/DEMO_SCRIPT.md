@@ -17,6 +17,12 @@ Live numbers change with every run, so read them off the screen. Do not memorise
 - [ ] Optional: the SatarkPay app on an Android phone, with `http://localhost:8000/qr` open on the laptop. Scan "Scan to receive" to show a scam stopped live.
 - [ ] Optional: the same app, paired, with SMS allowed, and a teammate ready to send a scam SMS.
 
+## If you only get one minute
+
+"Every Indian should get a second opinion before they pay. Many UPI scams are approved by the victim's own PIN, so a model that only reads the numbers can miss them. SatarkPay reads the money and the words: the note, the link, the UPI ID and the SMS from just before. It stops the payment before the PIN and says why, in English and Hindi. When we left a scam type out of training, XGBoost alone caught 7% of fake collects, and the full system caught 81%, on simulated data. How it does on real payments is unknown, so a bank would start in shadow mode, which stops nothing. Try it yourself at satarkpay.vercel.app."
+
+Check the two percentages against `/how` before saying them.
+
 ## The script
 
 **0:00 The story (Ajay).** "Sunita ji is a retired teacher in Jaipur. She is fictional, but this happens every day. A request appears on her phone: *Refund of ₹2,999, approve to receive*. It sounds like money coming in. If she enters her PIN, it goes out. In 2024-25 India reported ₹981 crore lost to UPI fraud, in 12.64 lakh incidents. And people find out after the money has gone."
