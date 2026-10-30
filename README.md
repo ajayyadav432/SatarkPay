@@ -59,7 +59,7 @@ New to the project? Read the [Project Guide](docs/SatarkPay_Project_Guide.pdf). 
 - **History** (`/history`): each account sees its own payments and checks, with what was decided. Search a phone number, mail ID, UPI ID or amount, and filter by decision or type (payments, SMS, email, links). Download as CSV or JSON. The words of checked messages are not kept, only who sent them. The demo accounts also see past simulated payments, which last until the server restarts.
 - **Messages from your own phone and extension** arrive without a login, so they appear for the demo accounts on the laptop or with a real password, never for a test login over Wi-Fi or for other sign-ups.
 - **Sample posts:** an empty feed starts with 6 made-up posts, each marked Sample, using invented `@sim` IDs. They are not real reports.
-- **Storage:** SQLite on a laptop, or Postgres when `SATARKPAY_DATABASE_URL` is set. Without a database, the online copy loses the feed and history whenever it restarts.
+- **Storage:** SQLite on a laptop, or Postgres when `SATARKPAY_DATABASE_URL` is set. The online copy uses a free Neon Postgres database, so its feed, reports, blocks and history survive restarts. Each public test login has its own history and cannot read anyone else's. Live dashboard numbers and simulated payments are still kept in memory, so they can reset online.
 - **Translations** were written without a native speaker's review, so the wording may not be natural. A sentence with no translation stays in English.
 
 ## Try the browser extension

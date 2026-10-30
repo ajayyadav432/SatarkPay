@@ -19,7 +19,7 @@
         [["", tr.all], ...Object.keys(SP.ACTIONS).map((a) => [a, SP.ACTIONS[a]["label_" + SP.lang()] || SP.ACTIONS[a].label])].map(([value, label]) => h("option", { value, selected: action === value, text: label }))),
       h("select", { id: "hist-kind", class: "select", "aria-label": tr.kind, onchange: (e) => { kind = e.target.value; rows(); } },
         [["", tr.kindAll], ["payment", tr.kindPayment], ["sms", tr.kindSms], ["email", tr.kindEmail], ["link", tr.kindLink]].map(([value, label]) => h("option", { value, selected: kind === value, text: label }))),
-      me && me.role === "admin" ? h("label", { class: "small" }, h("input", { type: "checkbox", id: "hist-all", checked: everyone, onchange: (e) => { everyone = e.target.checked; rows(); } }), " " + tr.everyone) : null,
+      me && me.role === "admin" && !me.test ? h("label", { class: "small" }, h("input", { type: "checkbox", id: "hist-all", checked: everyone, onchange: (e) => { everyone = e.target.checked; rows(); } }), " " + tr.everyone) : null,
       h("span", { class: "grow" }),
       h("a", { class: "btn btn-small", id: "export-csv", text: tr.exportCsv, download: "" }),
       h("a", { class: "btn btn-small", id: "export-json", text: tr.exportJson, download: "" }),

@@ -447,6 +447,8 @@ def test_a_message_is_found_by_its_senders_number_or_mail_id_and_its_words_are_n
 
 
 def test_a_laptops_own_messages_reach_its_owner_but_not_a_stranger(clean, monkeypatch):
+    if clean.is_shared():
+        pytest.skip("a shared database does not keep a laptop's own messages")
     client = _client()
     client.post("/api/ingest", headers={"X-Satark-Token": "test-pairing-code"}, json={"text": "Win a prize now http://paypa1.com/signin", "channel": "email", "sender": "own@paypa1.com", "source": "sms-app", "ref": "own-mail"})
     assert logged_in("admin").get("/api/v1/history?q=own@paypa1").json()["checks"]
@@ -473,3 +475,28 @@ def test_an_empty_feed_gets_sample_posts_marked_as_samples_with_made_up_ids(clea
     assert all(p["payee"] == "" or "@sim" in p["payee"] for p in SAMPLE_POSTS)
     clean.seed_samples(SAMPLE_POSTS)
     assert len(_client().get("/api/v1/posts").json()["posts"]) == len(SAMPLE_POSTS), "only into an empty feed"
+
+
+def test_each_public_test_login_has_its_own_history_and_cannot_read_others(clean):
+    def visitor(role="user"):
+        c = _client()
+        assert c.post("/api/v1/auth/test-login", json={"role": role}).status_code == 200
+        return c
+    a, b = visitor(), visitor()
+    me = a.get("/api/v1/demo").json()["me"]
+    pay = {"payer": me["vpa"], "payee": "private.check@ybl", "amount": 50, "kind": "PAY", "device": me["device"], "city": me["city"], "balance": me["balance"]}
+    assert a.post("/api/v1/score", json=pay).status_code == 200
+    assert [x["subject"] for x in a.get("/api/v1/history?q=private.check").json()["checks"]] == ["private.check@ybl"]
+    assert b.get("/api/v1/history?q=private.check").json()["checks"] == []
+    b.delete("/api/v1/history")
+    assert a.get("/api/v1/history?q=private.check").json()["checks"], "another visitor cannot clear it"
+    assert visitor("admin").get("/api/v1/history?everyone=true").status_code == 403
+
+
+def test_a_public_test_admin_sees_only_made_up_ids_in_the_block_list(clean):
+    clean.add_report("real.person@ybl", "one")
+    clean.add_report("made.up@simybl", "one")
+    c = _client()
+    c.post("/api/v1/auth/test-login", json={"role": "admin"})
+    assert [r["payee"] for r in c.get("/api/v1/blocks").json()["most_reported"]] == ["made.up@simybl"]
+    assert {r["payee"] for r in logged_in("admin").get("/api/v1/blocks").json()["most_reported"]} == {"real.person@ybl", "made.up@simybl"}

@@ -362,7 +362,7 @@ def add_post(author: str, author_name: str, payee: str, category: str, body: str
 
 
 def list_posts(sort: str = "new", limit: int = 30, offset: int = 0, include_hidden: bool = False) -> list[dict]:
-    order = "votes DESC, p.id DESC" if sort == "top" else "p.id DESC"
+    order = "votes DESC, p.created DESC" if sort == "top" else "p.created DESC, p.id DESC"
     where = "" if include_hidden else "WHERE p.hidden = 0"
     sql = (f"SELECT p.*, COALESCE((SELECT SUM(v.value) FROM feed_votes v WHERE v.post_id = p.id), 0) AS votes, "
            f"(SELECT COUNT(*) FROM feed_comments c WHERE c.post_id = p.id AND c.hidden = 0) AS comments "

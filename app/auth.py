@@ -71,7 +71,7 @@ _DUMMY = hash_password(secrets.token_hex(8))
 
 
 def new_session(role: str, name: str, username: str, test: bool = False) -> str:
-    body = base64.urlsafe_b64encode(json.dumps({"r": role, "n": name, "u": username, "t": test, "x": int(time.time()) + SESSION_SECONDS, "j": secrets.token_hex(8)}).encode()).decode()
+    body = base64.urlsafe_b64encode(json.dumps({"r": role, "n": name, "u": username, "t": test, **({"i": secrets.token_hex(6)} if test else {}), "x": int(time.time()) + SESSION_SECONDS, "j": secrets.token_hex(8)}).encode()).decode()
     signature = hmac.new(_secret(), body.encode(), hashlib.sha256).hexdigest()
     return body + "." + signature
 

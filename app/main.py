@@ -430,8 +430,12 @@ def api_reputation(vpa: str = Query(max_length=config.MAX_VPA_CHARS), _: str = A
 
 
 @app.get("/api/v1/blocks")
-def api_blocks(_: str = ADMIN):
-    return {"blocks": store.list_blocks(), "most_reported": store.most_reported()}
+def api_blocks(request: Request, _: str = ADMIN):
+    blocks, reported = store.list_blocks(), store.most_reported()
+    if auth.session_of(request).get("t"):     # a public test login sees only made-up IDs, as those are all it can act on
+        blocks = [b for b in blocks if SIMULATED_ID.search(b["payee"])]
+        reported = [r for r in reported if SIMULATED_ID.search(r["payee"])]
+    return {"blocks": blocks, "most_reported": reported}
 
 
 @app.post("/api/v1/blocks")
@@ -492,11 +496,11 @@ def _simulated_rows(session: dict, everyone: bool, engine: Live, q: str, action:
 
 def _history_rows(request: Request, q: str, action: str, limit: int, everyone: bool, kind: str = "") -> list[dict]:
     session = auth.session_of(request)
-    if everyone and session["r"] != "admin":
+    if everyone and (session["r"] != "admin" or session.get("t")):     # a public test login must not read what others checked
         raise HTTPException(status_code=403, detail="This account cannot do that.")
     # This laptop's own phone and extension: shown on the laptop or to a real login, never to a test login over Wi-Fi.
     device = session["u"] in DEMO_USERS and (is_local(request) or not session.get("t"))
-    rows = store.list_checks(None if everyone else session["u"], None if everyone else session["r"], q.strip(), action, limit, HISTORY_KINDS.get(kind, ()), device)
+    rows = store.list_checks(None if everyone else _history_owner(session), None if everyone else session["r"], q.strip(), action, limit, HISTORY_KINDS.get(kind, ()), device)
     for row in rows:
         row["when"] = datetime.fromtimestamp(row["created"], IST).strftime("%Y-%m-%d %H:%M")
     seen = {r["txn_id"] for r in rows}
@@ -518,7 +522,7 @@ def api_history(request: Request, q: str = Query(default="", max_length=100), ac
 @app.delete("/api/v1/history")
 def api_history_clear(request: Request, _: str = ANYONE_LOGGED_IN):
     session = auth.session_of(request)
-    store.clear_checks(session["u"], session["r"])
+    store.clear_checks(_history_owner(session), session["r"])
     return {"cleared": True}
 
 
@@ -538,10 +542,15 @@ def api_history_export(fmt: Literal["csv", "json"], request: Request, q: str = Q
     return Response("\ufeff" + buf.getvalue(), media_type="text/csv; charset=utf-8", headers=headers)     # the mark lets Excel read Hindi and rupee signs
 
 
+def _history_owner(session: dict) -> str:
+    """Each test login has its own history. Strangers share the test account, and what they check is theirs."""
+    return f'{session["u"]}~{session["i"]}' if session.get("i") else session["u"]
+
+
 def _log_check(request: Request, kind: str, subject: str, amount, note: str, score: int, level: str, action: str, summary: str, txn_id: str = "") -> None:
     session = auth.session_of(request)
     if session:
-        store.add_check(session["u"], session["r"], kind, subject, amount, note, score, level, action, summary, txn_id)
+        store.add_check(_history_owner(session), session["r"], kind, subject, amount, note, score, level, action, summary, txn_id)
     elif not config.ON_VERCEL and not store.is_shared():     # the laptop's own phone or extension, which has no login
         store.add_check(store.DEVICE, "device", kind, subject, amount, note, score, level, action, summary, txn_id)
 
@@ -586,7 +595,7 @@ def api_logout(request: Request, response: Response):
 @app.get("/api/v1/auth/me")
 def api_me(request: Request, role: str = ANYONE_LOGGED_IN):
     session = auth.session_of(request)
-    return {"role": role, "username": session["u"], "name": session["n"], "home": auth.ACCOUNTS[role]["home"]}
+    return {"role": role, "username": session["u"], "name": session["n"], "home": auth.ACCOUNTS[role]["home"], "test": bool(session.get("t"))}
 
 
 def _persona_vpas() -> set[str]:
