@@ -90,17 +90,9 @@
    "from": "android/app/src/main/java/ai/satark/smsguard/BlockActivity.kt",
    "sha256": "3fd0de13b74eeb83befbac24c64b3a397b186f178095879407ac6945e64532a8"
   },
-  "android/app/src/main/java/ai/satark/smsguard/theme/Type.kt": {
-   "from": "android/app/src/main/java/ai/satark/smsguard/theme/Type.kt",
-   "sha256": "10d1ea8d9bbae06c3b507f3b4137799a7fcf4da546ffd1630e477dd7779fc6e3"
-  },
   "android/app/src/main/res/drawable/ic_launcher_background.xml": {
    "from": "android/app/src/main/res/drawable/ic_launcher_background.xml",
    "sha256": "dbacf6f6b054750bc3f47436eb86e7f71412024a39f0cb42ad60a53ecf9ab863"
-  },
-  "android/app/src/main/res/drawable/ic_launcher_foreground.xml": {
-   "from": "android/app/src/main/res/drawable/ic_launcher_foreground.xml",
-   "sha256": "d4f72b28df324a6b3f81f8cb2e2708935c6cf5fd3fb9de2c67a1e26633f69c4b"
   },
   "android/app/src/main/res/drawable/ic_launcher_monochrome.xml": {
    "from": "android/app/src/main/res/drawable/ic_launcher_monochrome.xml",
@@ -166,25 +158,9 @@
    "from": "extension/icons/icon48.png",
    "sha256": "87e817cd90ac1c7c8cbfa625599f5e3b8c9561e5fb123e64e682d0fdb32b6df5"
   },
-  "extension/popup.css": {
-   "from": "extension/popup.css",
-   "sha256": "6ec7ded7bfc6167848af0dcacf50cb69c527ec1e0e59805d1b8457edbd3d39ad"
-  },
   "app/static/theme.js": {
    "from": "app/static/theme.js",
    "sha256": "dc22d8898571d56dfb5b10271d6d964694fb9139ae9fffcf4ca29337404c256c"
-  },
-  "app/static/favicon.svg": {
-   "from": "app/static/favicon.svg",
-   "sha256": "65d834653d50ec2fb7c59311a94ba0fd1fd244388704ec4975dce61c39237b19"
-  },
-  "app/static/vendor/fonts/inter-latin-wght-normal.woff2": {
-   "from": "app/static/vendor/fonts/inter-latin-wght-normal.woff2",
-   "sha256": "3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62"
-  },
-  "app/static/vendor/fonts/OFL.txt": {
-   "from": "app/static/vendor/fonts/OFL.txt",
-   "sha256": "3b0a5fca3d17942cde889069889dedbbbd075e9b599968c82a95f4d944e9b345"
   },
   "docs/logo.svg": {
    "from": "docs/logo.svg",
@@ -250,6 +226,10 @@
   "extension/gmail.js",
   "extension/manifest.json",
   "extension/popup.html",
-  "extension/popup.js"
+  "extension/popup.js",
+  "android/app/src/main/java/ai/satark/smsguard/theme/Type.kt",
+  "android/app/src/main/res/drawable/ic_launcher_foreground.xml",
+  "extension/popup.css",
+  "app/static/favicon.svg"
  ]
 }

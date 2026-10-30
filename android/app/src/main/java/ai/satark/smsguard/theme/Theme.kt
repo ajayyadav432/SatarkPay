@@ -3,9 +3,10 @@ package ai.satark.smsguard.theme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 
 private val Scheme = darkColorScheme(
-    primary = Indigo, onPrimary = TextMain, secondary = Sky, background = Ink, onBackground = TextMain,
+    primary = Blue, onPrimary = Color.White, secondary = Sky, background = Ink, onBackground = TextMain,
     surface = Panel, onSurface = TextMain, surfaceVariant = PanelRaised, onSurfaceVariant = TextSoft, outline = Line,
 )
 

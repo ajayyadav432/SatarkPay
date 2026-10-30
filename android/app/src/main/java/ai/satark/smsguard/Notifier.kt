@@ -108,7 +108,7 @@ object Notifier {
         val builder = NotificationCompat.Builder(context, if (risky) CH_RISK else CH_INFO)
             .setSmallIcon(R.drawable.ic_stat_satark)
             .setLargeIcon(logo(context))
-            .setColor(LEVEL_COLOR[item.level] ?: 0xFF059669.toInt())
+            .setColor(LEVEL_COLOR[item.level] ?: 0xFF1E9DF1.toInt())
             .setContentTitle(title)
             .setContentText(line)
             .setStyle(NotificationCompat.BigTextStyle().bigText(big).setBigContentTitle(title))

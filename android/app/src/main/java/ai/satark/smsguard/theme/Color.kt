@@ -2,17 +2,18 @@ package ai.satark.smsguard.theme
 
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 
-// Taken from the logo: deep indigo with an indigo-to-sky gradient.
-val Ink = Color(0xFF0B1020)
-val Panel = Color(0xFF151B30)
-val PanelRaised = Color(0xFF1E2642)
-val Line = Color(0xFF2B3456)
-val TextMain = Color(0xFFF1F4FF)
-val TextSoft = Color(0xFFA3ADCB)
-val Indigo = Color(0xFF6366F1)
-val Sky = Color(0xFF0EA5E9)
-val BrandBrush = Brush.linearGradient(listOf(Indigo, Sky))
+// The Twitter theme from tweakcn, dark mode.
+val Ink = Color(0xFF000000)
+val Panel = Color(0xFF17181C)
+val PanelRaised = Color(0xFF202327)
+val Line = Color(0xFF2F3336)
+val TextMain = Color(0xFFE7E9EA)
+val TextSoft = Color(0xFF9AA3AB)
+val Blue = Color(0xFF1C9CF0)
+val Sky = Blue
+val BrandBrush = SolidColor(Blue)
 
 // Risk colours are used for risk and nothing else.
 val RiskSafe = Color(0xFF16A34A)

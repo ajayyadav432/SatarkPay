@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import csv
 import hmac
 import io
 import ipaddress
@@ -11,6 +12,7 @@ import re
 import socket
 import time
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta, timezone
 from typing import Literal
 from urllib.parse import quote, urlencode
 
@@ -57,6 +59,7 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title=config.APP_NAME, version=VERSION, lifespan=lifespan, description=f"{config.APP_TAGLINE}. {config.PROBLEM_STATEMENT}. All data is simulated.",
               docs_url=None, redoc_url=None)
 
+IST = timezone(timedelta(hours=5, minutes=30))
 CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
 UNSAFE = {"POST", "PUT", "PATCH", "DELETE"}
 
@@ -93,7 +96,7 @@ async def security_headers(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
     path = request.url.path
-    if path.startswith("/api/") or path in ("/", "/pay", "/merchant", "/how", "/go", "/login"):
+    if path.startswith("/api/") or path in ("/", "/pay", "/merchant", "/how", "/go", "/login", "/feed", "/history"):
         response.headers["Cache-Control"] = "no-store"
     elif path.startswith("/static/"):
         response.headers["Cache-Control"] = "no-cache"
@@ -259,6 +262,254 @@ def page_go():
     return _page("go.html")
 
 
+# --- the community: reports, blocks, the feed ----------------------------------------
+
+REPORTS_TO_WARN = 3         # reports from this many different accounts make a warning. Only an admin can block.
+SIMULATED_ID = re.compile(r"@sim[a-z]*$")
+_ID_IN_TEXT = re.compile(r"[\w.\-]+@[a-zA-Z][a-zA-Z0-9.\-]*")
+_PHONE_IN_TEXT = re.compile(r"(?<!\d)(?:\+?91[\s\-]?)?\d{10}(?!\d)")
+FEED_CATEGORIES = ("Fake collect", "QR scam", "Phishing link", "Job or prize", "Digital arrest", "Mule account", "Other")
+
+
+def mask_vpa(vpa: str) -> str:
+    """A public report is an accusation nobody has checked, so a real UPI ID is never shown in full. Simulated ones are made up."""
+    if not vpa or SIMULATED_ID.search(vpa):
+        return vpa
+    name, _, handle = vpa.partition("@")
+    return f"{name[:2]}***@{handle}"
+
+
+def _mask_text(text: str) -> str:
+    text = _ID_IN_TEXT.sub(lambda m: mask_vpa(m.group(0).lower()), text)
+    return _PHONE_IN_TEXT.sub(lambda m: m.group(0)[:2] + "********", text)
+
+
+def _reporter(request: Request) -> str:
+    session = auth.session_of(request)
+    return f"{session['r']}:{session['u']}"
+
+
+def apply_reputation(result: dict, payee: str) -> None:
+    """What people and analysts have said about this UPI ID. Changes the result in place, so that /outcome enforces it too."""
+    block = store.get_block(payee)
+    count = store.report_count(payee)
+    result["reports"] = count
+    result["blocked"] = bool(block)
+    if block:
+        result.update(action="BLOCK", stopped=True, alert=True, score=max(result["score"], 90), level="Critical",
+                      headline_en="Stopped. An analyst has blocked this UPI ID", headline_hi="रोक दिया गया। एक विश्लेषक ने इस UPI ID को ब्लॉक किया है")
+        result["reasons"].insert(0, {"id": "blocked", "source": "community", "text_en": "An analyst reviewed the reports about this UPI ID and blocked it",
+                                     "text_hi": "एक विश्लेषक ने इस UPI ID की शिकायतों की जाँच करके इसे ब्लॉक किया"})
+    elif count >= REPORTS_TO_WARN:
+        if result["action"] == "ALLOW":
+            result.update(action="WARN", headline_en="Check before you pay. People have reported this UPI ID", headline_hi="भुगतान से पहले जाँच लें। लोगों ने इस UPI ID की शिकायत की है")
+        result["reasons"].insert(0, {"id": "community_reports", "source": "community", "text_en": f"{count} accounts have reported this UPI ID. Reports are not verified",
+                                     "text_hi": f"{count} खातों ने इस UPI ID की शिकायत की है। शिकायतों की जाँच नहीं हुई है"})
+
+
+def scan_stages(result: dict, txn: dict) -> list[dict]:
+    """The steps of a check and what each one really found, for the step-by-step view. The check has already finished."""
+    ids = {r.get("id") for r in result.get("reasons", [])}
+    rules = set(result.get("rules", []))
+    model = result.get("model", {})
+    return [{"id": "details", "warn": False},
+            {"id": "upi_id", "warn": bool(ids & {"fake_vpa", "blocked", "community_reports", "reports"} or "fake_vpa" in rules or result.get("blocked"))},
+            {"id": "words", "warn": bool(ids & {"note", "link", "sms"} or rules & {"receive_lure", "scam_link", "scam_sms_link"})},
+            {"id": "behaviour", "warn": bool(ids & {"amount_unusual", "drains_balance", "burst", "new_device", "jump", "forwarding", "odd_hour"})},
+            {"id": "models", "warn": bool(model.get("layers_agreeing"))},
+            {"id": "decision", "warn": result["action"] != "ALLOW"}]
+
+
+def _feed_view(post: dict, votes: dict[int, int]) -> dict:
+    return {"id": post["id"], "created": post["created"], "author": post["author_name"], "payee": mask_vpa(post["payee"]), "category": post["category"], "body": _mask_text(post["body"]),
+            "votes": int(post["votes"]), "comments": int(post["comments"]), "my_vote": votes.get(post["id"], 0), "reports": store.report_count(post["payee"]) if post["payee"] else 0,
+            "blocked": bool(store.get_block(post["payee"])) if post["payee"] else False}
+
+
+class PostIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    payee: str = Field(default="", max_length=config.MAX_VPA_CHARS)
+    category: Literal[FEED_CATEGORIES]
+    body: str = Field(min_length=10, max_length=1000)
+
+
+class VoteIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    value: Literal[-1, 0, 1]
+
+
+class CommentIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    body: str = Field(min_length=1, max_length=500)
+
+
+class BlockIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    payee: str = Field(max_length=config.MAX_VPA_CHARS)
+    reason: str = Field(min_length=3, max_length=300)
+
+
+def _clean_vpa(v: str) -> str:
+    v = v.strip().lower()
+    if v and not _VPA.match(v):
+        raise HTTPException(status_code=422, detail="That does not look like a UPI ID. Example: name@bank")
+    return v
+
+
+@app.get("/feed", include_in_schema=False)
+def page_feed():
+    return _page("feed.html")
+
+
+@app.get("/history", include_in_schema=False)
+def page_history(request: Request):
+    return _gated(request, "history.html", "user", "merchant", "admin")
+
+
+@app.get("/api/v1/posts")
+def api_feed_list(request: Request, sort: Literal["new", "top"] = "new", limit: int = Query(default=30, ge=1, le=100), offset: int = Query(default=0, ge=0)):
+    """Anyone can read the feed. Real UPI IDs and phone numbers are masked."""
+    session = auth.session_of(request)
+    votes = store.my_votes(f"{session['r']}:{session['u']}") if session else {}
+    return {"posts": [_feed_view(p, votes) for p in store.list_posts(sort, limit, offset)], "categories": FEED_CATEGORIES}
+
+
+@app.post("/api/v1/posts")
+def api_feed_post(body: PostIn, request: Request, _: str = ANYONE_LOGGED_IN):
+    """A post that names a UPI ID also counts as one report against it."""
+    session = auth.session_of(request)
+    payee = _clean_vpa(body.payee)
+    who = _reporter(request)
+    post_id = store.add_post(who, session["n"], payee, body.category, body.body.strip())
+    if payee:
+        store.add_report(payee, who)
+    return _feed_view(store.get_post(post_id), {})
+
+
+@app.post("/api/v1/posts/{post_id}/vote")
+def api_feed_vote(post_id: int, body: VoteIn, request: Request, _: str = ANYONE_LOGGED_IN):
+    if store.get_post(post_id) is None:
+        raise HTTPException(status_code=404, detail="Post not found.")
+    who = _reporter(request)
+    store.vote(post_id, who, body.value)
+    return _feed_view(store.get_post(post_id), store.my_votes(who))
+
+
+@app.get("/api/v1/posts/{post_id}/comments")
+def api_feed_comments(post_id: int):
+    return {"comments": [{"id": c["id"], "created": c["created"], "author": c["author_name"], "body": _mask_text(c["body"])} for c in store.list_comments(post_id)]}
+
+
+@app.post("/api/v1/posts/{post_id}/comments")
+def api_feed_comment(post_id: int, body: CommentIn, request: Request, _: str = ANYONE_LOGGED_IN):
+    if store.get_post(post_id) is None:
+        raise HTTPException(status_code=404, detail="Post not found.")
+    session = auth.session_of(request)
+    store.add_comment(post_id, _reporter(request), session["n"], body.body.strip())
+    return api_feed_comments(post_id)
+
+
+@app.delete("/api/v1/posts/{post_id}")
+def api_feed_hide(post_id: int, _: str = ADMIN):
+    if not store.hide_post(post_id):
+        raise HTTPException(status_code=404, detail="Post not found.")
+    return {"hidden": True}
+
+
+@app.get("/api/v1/reputation")
+def api_reputation(vpa: str = Query(max_length=config.MAX_VPA_CHARS), _: str = ANYONE_LOGGED_IN):
+    payee = _clean_vpa(vpa)
+    return {"payee": mask_vpa(payee), "reports": store.report_count(payee), "blocked": bool(store.get_block(payee))}
+
+
+@app.get("/api/v1/blocks")
+def api_blocks(_: str = ADMIN):
+    return {"blocks": store.list_blocks(), "most_reported": store.most_reported()}
+
+
+@app.post("/api/v1/blocks")
+def api_block(body: BlockIn, request: Request, _: str = ADMIN):
+    """Only an admin can block, so that a group of people cannot get an honest shop blocked. A public test login reaches simulated IDs only."""
+    payee = _clean_vpa(body.payee)
+    if not payee:
+        raise HTTPException(status_code=422, detail="Enter a UPI ID.")
+    session = auth.session_of(request)
+    if session.get("t") and not SIMULATED_ID.search(payee):
+        raise HTTPException(status_code=403, detail="A test login can only block simulated UPI IDs.")
+    store.set_block(payee, session["u"], body.reason.strip())
+    return {"blocked": payee}
+
+
+@app.delete("/api/v1/blocks/{payee}")
+def api_unblock(payee: str, request: Request, _: str = ADMIN):
+    payee = _clean_vpa(payee)
+    if auth.session_of(request).get("t") and not SIMULATED_ID.search(payee):
+        raise HTTPException(status_code=403, detail="A test login can only unblock simulated UPI IDs.")
+    if not store.remove_block(payee):
+        raise HTTPException(status_code=404, detail="That UPI ID is not blocked.")
+    return {"blocked": False}
+
+
+# --- history and export ----------------------------------------------------------------
+
+EXPORT_FIELDS = ("created", "kind", "subject", "amount", "note", "score", "level", "action", "summary")
+
+
+def _history_rows(request: Request, q: str, action: str, limit: int, everyone: bool) -> list[dict]:
+    session = auth.session_of(request)
+    if everyone and session["r"] != "admin":
+        raise HTTPException(status_code=403, detail="This account cannot do that.")
+    rows = store.list_checks(None if everyone else session["u"], None if everyone else session["r"], q.strip(), action, limit)
+    for row in rows:
+        row["when"] = datetime.fromtimestamp(row["created"], IST).strftime("%Y-%m-%d %H:%M")
+    return rows
+
+
+def _csv_safe(value) -> str:
+    """A spreadsheet runs a cell that starts with = + - or @ as a formula, and notes come from strangers."""
+    text = "" if value is None else str(value)
+    return "'" + text if text[:1] in ("=", "+", "-", "@", "\t", "\r") else text
+
+
+@app.get("/api/v1/history")
+def api_history(request: Request, q: str = Query(default="", max_length=100), action: Literal["", "ALLOW", "WARN", "HOLD", "BLOCK"] = "", limit: int = Query(default=100, ge=1, le=500),
+                everyone: bool = False, _: str = ANYONE_LOGGED_IN):
+    return {"checks": _history_rows(request, q, action, limit, everyone)}
+
+
+@app.delete("/api/v1/history")
+def api_history_clear(request: Request, _: str = ANYONE_LOGGED_IN):
+    session = auth.session_of(request)
+    store.clear_checks(session["u"], session["r"])
+    return {"cleared": True}
+
+
+@app.get("/api/v1/history/export.{fmt}")
+def api_history_export(fmt: Literal["csv", "json"], request: Request, q: str = Query(default="", max_length=100), action: Literal["", "ALLOW", "WARN", "HOLD", "BLOCK"] = "",
+                       everyone: bool = False, _: str = ANYONE_LOGGED_IN):
+    rows = _history_rows(request, q, action, 500, everyone)
+    fields = ("when", *EXPORT_FIELDS[1:])
+    name = f"satarkpay-history.{fmt}"
+    headers = {"Content-Disposition": f'attachment; filename="{name}"'}
+    if fmt == "json":
+        return Response(json.dumps([{k: r[k] for k in fields} for r in rows], ensure_ascii=False, indent=1), media_type="application/json", headers=headers)
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(fields)
+    writer.writerows([_csv_safe(r[k]) for k in fields] for r in rows)
+    return Response("\ufeff" + buf.getvalue(), media_type="text/csv; charset=utf-8", headers=headers)     # the mark lets Excel read Hindi and rupee signs
+
+
+def _log_check(request: Request, kind: str, subject: str, amount, note: str, score: int, level: str, action: str, summary: str) -> None:
+    session = auth.session_of(request)
+    if session:
+        store.add_check(session["u"], session["r"], kind, subject, amount, note, score, level, action, summary)
+
+
 # --- login ---------------------------------------------------------------------------
 
 def _home(role: str, token: str, request: Request, response: Response) -> dict:
@@ -314,7 +565,7 @@ def _txn_from(body: PaymentIn) -> dict:
 
 
 @app.post("/api/v1/score")
-def api_score(body: PaymentIn, role: str = ANYONE_LOGGED_IN, engine: Live = Depends(get_live)):
+def api_score(body: PaymentIn, request: Request, role: str = ANYONE_LOGGED_IN, engine: Live = Depends(get_live)):
     """Score one payment before it goes through. By default nothing is recorded until /api/v1/outcome says what happened.
     With record=true the payment counts as done, unless it was stopped.
     A user pays only from a demo person's account. A merchant can only bring in payments to its own shop."""
@@ -324,23 +575,29 @@ def api_score(body: PaymentIn, role: str = ANYONE_LOGGED_IN, engine: Live = Depe
         raise HTTPException(status_code=403, detail="This account can only receive payments to its own shop.")
     entry = engine.score_request(_txn_from(body), source="api", explain_always=body.explain)
     result, txn = entry["result"], entry["txn"]
+    apply_reputation(result, body.payee)
+    result["stages"] = scan_stages(result, txn)
+    _log_check(request, body.kind, body.payee, body.amount, body.note or "", result["score"], result["level"], result["action"], result["headline_en"])
     if body.record:     # an app that only wants it recorded: warned payments go ahead, stopped ones do not
         engine.decide(txn["txn_id"], "cancelled" if result["stopped"] else "paid", source="api", skip_pause=True)
     return {**result, "txn_id": txn["txn_id"], "token": engine.pending.get(txn["txn_id"], {}).get("token")}
 
 
 @app.post("/api/v1/outcome")
-def api_outcome(body: DecisionIn, _: str = ANYONE_LOGGED_IN, engine: Live = Depends(get_live)):
+def api_outcome(body: DecisionIn, request: Request, _: str = ANYONE_LOGGED_IN, engine: Live = Depends(get_live)):
     """What the person did after seeing the result. 'reported' also counts as a complaint against the payee.
     A blocked payment cannot be paid, and a warned or held one only after its pause."""
     if not engine.token_ok(body.txn_id, body.token):
         raise HTTPException(status_code=404, detail="Unknown or already decided payment.")
+    payee = engine.pending[body.txn_id]["txn"]["payee"]
     try:
         done = engine.decide(body.txn_id, body.decision)
     except PaymentRefused as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from None
     if done is None:
         raise HTTPException(status_code=404, detail="Unknown or already decided payment.")
+    if body.decision == "reported":
+        store.add_report(payee, _reporter(request))
     return done
 
 
@@ -589,6 +846,7 @@ def api_ingest(body: IngestIn, request: Request, engine: Live = Depends(get_live
         _seen_ingest[key] = out
         while len(_seen_ingest) > MAX_SEEN_INGEST:
             _seen_ingest.pop(next(iter(_seen_ingest)))
+    _log_check(request, "MESSAGE CHECK", "Pasted message", None, "", r["score"], r["level"], "WARN" if level_rank(r["level"]) >= level_rank(config.WARN_FROM_LEVEL) else "ALLOW", r.get("category") or "")     # the words themselves are not kept
     return {**out, "duplicate": False}
 
 
@@ -605,12 +863,13 @@ def api_check_urls(body: UrlsIn):
 
 
 @app.get("/api/check-url")
-def api_check_url(u: str = Query(min_length=1, max_length=config.MAX_URL_CHARS), lookup: bool = False):
+def api_check_url(request: Request, u: str = Query(min_length=1, max_length=config.MAX_URL_CHARS), lookup: bool = False):
     url = normalise_url(u.replace("\\", "/"))     # browsers read a backslash as a slash: evil.com\@bank.com opens evil.com
     if not url.lower().startswith(("http://", "https://")):
         raise HTTPException(status_code=400, detail="Only http and https links can be checked.")
     result = analyze_url(url, raw=u, lookup=lookup)
     result["needs_warning"] = level_rank(result["level"]) >= level_rank(config.WARN_FROM_LEVEL)
+    _log_check(request, "LINK CHECK", url, None, "", result["score"], result["level"], "WARN" if result["needs_warning"] else "ALLOW", result["factors"][0]["title"] if result.get("factors") else "")
     return result
 
 

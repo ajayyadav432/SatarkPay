@@ -38,7 +38,7 @@
     const box = css(document.createElement("div"), {
       display: "flex", "align-items": "center", gap: "10px", margin: "0 0 12px", padding: "10px 14px",
       "border-radius": "10px", border: "1px solid " + (COLORS[r.level] || "#999"), "border-left": "6px solid " + (COLORS[r.level] || "#999"),
-      background: "#fff", color: "#0b1f18", font: "14px/1.45 system-ui, sans-serif",
+      background: "#fff", color: "#0f1419", font: "14px/1.45 system-ui, sans-serif",
     });
     box.dataset.satarkBar = "";
     const pill = css(document.createElement("b"), { background: COLORS[r.level] || "#999", color: "#fff", padding: "2px 10px",
@@ -56,7 +56,7 @@
     link.target = "_blank";
     link.rel = "noopener";
     link.textContent = "Details";
-    css(link, { color: "#047857", "font-weight": "700", "white-space": "nowrap" });
+    css(link, { color: "#0b6fb8", "font-weight": "700", "white-space": "nowrap" });
     box.append(link);
     body.before(box);
   }

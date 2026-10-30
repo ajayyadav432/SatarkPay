@@ -25,6 +25,8 @@ ON_VERCEL = bool(os.environ.get("VERCEL"))
 if ON_VERCEL:
     os.environ.setdefault("SATARKPAY_LIVE_USERS", "800")
     os.environ.setdefault("TLDEXTRACT_CACHE", "/tmp/tldextract")
+# With a database address, accounts, history, reports and the feed last and are shared. Vercel's Neon link sets these.
+DATABASE_URL = os.environ.get("SATARKPAY_DATABASE_URL") or os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
 DB_PATH = Path(os.environ.get("SATARKPAY_DB", "/tmp/satarkpay.db" if ON_VERCEL else DATA_DIR / "alerts.db"))
 
 HOST = os.environ.get("SATARK_HOST", "127.0.0.1")

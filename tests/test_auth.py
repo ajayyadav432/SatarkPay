@@ -253,3 +253,182 @@ def test_a_shops_takings_survive_the_live_feed_moving_on(engine):
     after = c.get("/api/v1/merchant/payments").json()
     assert after["received"] == before["received"] >= 1 and after["received_total"] == before["received_total"] and after["rows"]
 
+
+
+# --- reports, blocks, the feed, history ---------------------------------------------------
+
+@pytest.fixture()
+def clean(api):
+    from app.payments import store
+    store.clear_community()
+    yield store
+    store.clear_community()
+
+
+def _member(name):
+    c = _client()
+    assert c.post("/api/v1/auth/signup", json={"role": "user", "username": name, "password": "long-enough", "name": name.title()}).status_code in (200, 409)
+    assert c.post("/api/v1/auth/login", json={"role": "user", "username": name, "password": "long-enough"}).status_code == 200
+    return c
+
+
+def _score(c, payee="plain.person55@simybl", **kw):
+    r = c.post("/api/v1/score", json={"payer": SUNITA, "payee": payee, "amount": 100, "kind": "QR", **kw})
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+def test_reports_from_three_accounts_warn_but_never_block(clean):
+    payee = "reported.shop@simybl"
+    for i in range(3):
+        c = _member(f"reporter{i}")
+        assert c.post("/api/v1/posts", json={"payee": payee, "category": "QR scam", "body": "This one asked me to scan to receive."}).status_code == 200
+    d = _score(logged_in("user"), payee)
+    assert d["reports"] == 3 and d["action"] == "WARN" and not d["blocked"]
+    assert any("3 accounts" in x["text_en"] for x in d["reasons"])
+
+
+def test_one_account_counts_once_however_often_it_reports(clean):
+    c = _member("repeat.reporter")
+    for _ in range(5):
+        c.post("/api/v1/posts", json={"payee": "honest.shop@simybl", "category": "Other", "body": "I do not like this shop at all."})
+    assert clean.report_count("honest.shop@simybl") == 1
+
+
+def test_only_an_admin_can_block(clean):
+    body = {"payee": "bad.one@simybl", "reason": "Confirmed by review"}
+    assert _client().post("/api/v1/blocks", json=body).status_code == 401
+    assert logged_in("user").post("/api/v1/blocks", json=body).status_code == 403
+    assert logged_in("merchant").post("/api/v1/blocks", json=body).status_code == 403
+    assert logged_in("admin").post("/api/v1/blocks", json=body).status_code == 200
+
+
+def test_a_blocked_id_cannot_be_paid_even_by_calling_the_api(clean):
+    logged_in("admin").post("/api/v1/blocks", json={"payee": "bad.one@simybl", "reason": "Confirmed by review"})
+    c = logged_in("user")
+    d = _score(c, "bad.one@simybl")
+    assert d["action"] == "BLOCK" and d["blocked"] and d["reasons"][0]["id"] == "blocked"
+    r = c.post("/api/v1/outcome", json={"txn_id": d["txn_id"], "token": d["token"], "decision": "paid"})
+    assert r.status_code == 409
+
+
+def test_an_unblocked_id_goes_back_to_normal(clean):
+    a = logged_in("admin")
+    a.post("/api/v1/blocks", json={"payee": "bad.one@simybl", "reason": "Confirmed by review"})
+    assert a.delete("/api/v1/blocks/bad.one@simybl").status_code == 200
+    assert not _score(logged_in("user"), "bad.one@simybl")["blocked"]
+
+
+def test_a_public_test_admin_cannot_block_a_real_upi_id(clean):
+    c = _client()
+    c.post("/api/v1/auth/test-login", json={"role": "admin"})
+    assert c.post("/api/v1/blocks", json={"payee": "someone.real@oksbi", "reason": "Trying it"}).status_code == 403
+    assert c.post("/api/v1/blocks", json={"payee": "someone@simybl", "reason": "Trying it"}).status_code == 200
+    assert logged_in("admin").post("/api/v1/blocks", json={"payee": "someone.real@oksbi", "reason": "Reviewed"}).status_code == 200
+
+
+def test_the_feed_can_be_read_without_login_and_masks_real_details(clean):
+    c = logged_in("user")
+    c.post("/api/v1/posts", json={"payee": "someone.real@oksbi", "category": "QR scam", "body": "He called from 9876543210 and said pay victim.two@ybl or else"})
+    p = _client().get("/api/v1/posts").json()["posts"][0]
+    assert p["payee"] == "so***@oksbi"
+    assert "9876543210" not in p["body"] and "victim.two" not in p["body"] and "vi***@ybl" in p["body"]
+    assert _client().post("/api/v1/posts", json={"category": "Other", "body": "No login, no posting here."}).status_code == 401
+
+
+def test_simulated_ids_stay_readable_in_the_feed(clean):
+    logged_in("user").post("/api/v1/posts", json={"payee": "refund-sbi@simybl", "category": "Fake collect", "body": "This is the fake refund one."})
+    assert _client().get("/api/v1/posts").json()["posts"][0]["payee"] == "refund-sbi@simybl"
+
+
+def test_a_script_in_a_post_comes_back_as_plain_data_only(clean):
+    body = '<img src=x onerror="alert(1)"> scam text'
+    p = logged_in("user").post("/api/v1/posts", json={"category": "Other", "body": body}).json()
+    assert p["body"] == body, "stored as text; the pages only ever show it as text"
+
+
+@pytest.mark.parametrize("bad", [{"category": "Nope", "body": "A long enough body"}, {"category": "Other", "body": "short"}, {"category": "Other", "body": "x" * 1001},
+                                 {"category": "Other", "body": "A long enough body", "payee": "not an id"}])
+def test_bad_posts_are_refused(clean, bad):
+    assert logged_in("user").post("/api/v1/posts", json=bad).status_code == 422
+
+
+def test_one_account_has_one_vote_and_can_change_it(clean):
+    c, d = _member("voter.one"), _member("voter.two")
+    pid = c.post("/api/v1/posts", json={"category": "Other", "body": "A post people can vote on."}).json()["id"]
+    assert c.post(f"/api/v1/posts/{pid}/vote", json={"value": 1}).json()["votes"] == 1
+    assert c.post(f"/api/v1/posts/{pid}/vote", json={"value": 1}).json()["votes"] == 1
+    assert d.post(f"/api/v1/posts/{pid}/vote", json={"value": 1}).json()["votes"] == 2
+    assert c.post(f"/api/v1/posts/{pid}/vote", json={"value": -1}).json()["votes"] == 0
+    assert c.post(f"/api/v1/posts/{pid}/vote", json={"value": 0}).json()["my_vote"] == 0
+    assert c.post(f"/api/v1/posts/{pid}/vote", json={"value": 5}).status_code == 422
+    assert c.post("/api/v1/posts/999999/vote", json={"value": 1}).status_code == 404
+
+
+def test_top_sort_puts_the_most_voted_first(clean):
+    c = _member("sorter")
+    first = c.post("/api/v1/posts", json={"category": "Other", "body": "The first post in this feed."}).json()["id"]
+    second = c.post("/api/v1/posts", json={"category": "Other", "body": "The second post in this feed."}).json()["id"]
+    c.post(f"/api/v1/posts/{first}/vote", json={"value": 1})
+    assert _client().get("/api/v1/posts?sort=new").json()["posts"][0]["id"] == second
+    assert _client().get("/api/v1/posts?sort=top").json()["posts"][0]["id"] == first
+
+
+def test_comments_are_saved_and_masked(clean):
+    c = logged_in("user")
+    pid = c.post("/api/v1/posts", json={"category": "Other", "body": "A post people can comment on."}).json()["id"]
+    d = c.post(f"/api/v1/posts/{pid}/comments", json={"body": "He used 9876543210 with me too"}).json()
+    assert len(d["comments"]) == 1 and "9876543210" not in d["comments"][0]["body"]
+    assert _client().post(f"/api/v1/posts/{pid}/comments", json={"body": "No login"}).status_code == 401
+
+
+def test_only_an_admin_can_hide_a_post(clean):
+    pid = logged_in("user").post("/api/v1/posts", json={"category": "Other", "body": "A post an admin may hide."}).json()["id"]
+    assert logged_in("user").delete(f"/api/v1/posts/{pid}").status_code == 403
+    assert logged_in("admin").delete(f"/api/v1/posts/{pid}").status_code == 200
+    assert _client().get("/api/v1/posts").json()["posts"] == []
+
+
+def test_history_is_private_to_each_account(clean):
+    a, b = _member("history.a"), _member("history.b")
+    _score(a, "only.for.a@simybl")
+    assert [x["subject"] for x in a.get("/api/v1/history").json()["checks"]] == ["only.for.a@simybl"]
+    assert b.get("/api/v1/history").json()["checks"] == []
+    assert b.get("/api/v1/history?everyone=true").status_code == 403
+    assert logged_in("admin").get("/api/v1/history?everyone=true").json()["checks"]
+    assert _client().get("/api/v1/history").status_code == 401
+
+
+def test_history_can_be_searched_filtered_and_cleared(clean):
+    c = _member("history.c")
+    _score(c, "find.me@simybl")
+    _score(c, "other.one@simybl")
+    assert len(c.get("/api/v1/history?q=find").json()["checks"]) == 1
+    assert c.get("/api/v1/history?action=BLOCK").json()["checks"] == []
+    assert c.delete("/api/v1/history").status_code == 200
+    assert c.get("/api/v1/history").json()["checks"] == []
+
+
+def test_export_as_json_and_csv(clean):
+    import csv
+    import io
+    import json
+    c = _member("history.d")
+    _score(c, "export.me@simybl", note="=HYPERLINK(1)")
+    j = c.get("/api/v1/history/export.json")
+    assert "attachment" in j.headers["content-disposition"] and json.loads(j.text)[0]["subject"] == "export.me@simybl"
+    x = c.get("/api/v1/history/export.csv")
+    rows = list(csv.DictReader(io.StringIO(x.text.lstrip("﻿"))))
+    assert rows[0]["subject"] == "export.me@simybl"
+    assert rows[0]["note"].startswith("'="), "a note must not run as a spreadsheet formula"
+    assert c.get("/api/v1/history/export.xml").status_code == 422
+    assert _client().get("/api/v1/history/export.csv").status_code == 401
+
+
+def test_a_check_returns_the_real_stages(clean):
+    d = _score(logged_in("user"), "olx.buyer.help@simybl", note="scan to receive", amount=5000)
+    stages = {s["id"]: s["warn"] for s in d["stages"]}
+    assert list(stages) == ["details", "upi_id", "words", "behaviour", "models", "decision"]
+    assert stages["words"] and stages["decision"] and not stages["details"]
+    quiet = {s["id"]: s["warn"] for s in _score(logged_in("user"), "ramesh.kirana@simaxis")["stages"]}
+    assert not quiet["words"]

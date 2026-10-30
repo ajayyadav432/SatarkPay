@@ -231,4 +231,5 @@ plan.md              the plan, design decisions and the findings log
 - **PaySim:** Lopez-Rojas, Elmir, Axelsson (2016), downloaded from the Hugging Face mirror `theman10/paysim`. Not stored in the repo.
 - **the engine's text and URL models:** their own datasets are listed in the SatarkPay README.
 - **Facts quoted in the app and the pitch:** [NPCI ends P2P collect](https://www.angelone.in/news/market-updates/npci-to-end-upi-person-to-person-collect-requests-from-october-to-curb-fraud), [UPI fraud figures, Lok Sabha, 15 Dec 2025](https://ianslive.in/upi-frauds-worth-rs-805-crore-witnessed-this-fiscal-so-far-minister--20251215175703), [UPI volume in FY25](https://www.business-standard.com/finance/news/upi-s-contribution-to-payments-ecosystem-volume-grows-to-83-4-in-fy25-125052900871_1.html), [Financial Fraud Risk Indicator](https://www.medianama.com/2025/05/223-dot-financial-fraud-risk-indicator-upi/). These are press-reported.
-- **Inter font:** SIL Open Font License, `app/static/vendor/fonts/OFL.txt`.
+- **Open Sans font:** SIL Open Font License, `app/static/vendor/fonts/OPEN-SANS-LICENSE.txt`.
+- **Twitter colour theme:** values from [tweakcn](https://tweakcn.com/r/themes/twitter.json), copied by hand into the website, extension and app.

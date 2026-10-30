@@ -387,6 +387,7 @@ def test_false_alarm_label_is_kept_for_retraining(api):
     assert store.get_alert(alert["id"])["status"] == "false_alarm"
 
 
+@pytest.mark.skipif(store.is_shared(), reason="a shared database is never cleared on start, because many copies use it")
 def test_restarting_keeps_analyst_labels_and_never_overwrites_them(api):
     """Found in code review: payment numbers repeat after a restart, and the old code replaced the labelled alert."""
     base = {"ts": 1.0, "payer": "a@sim", "payee": "b@sim", "amount": 1.0, "score": 90, "level": "Critical", "action": "BLOCK", "source": "stream", "txn_id": "T2026-500"}
