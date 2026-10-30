@@ -186,7 +186,7 @@ private suspend fun <T> load(onLoggedOut: () -> Unit, onProblem: (String) -> Uni
 
 /** The shop's view: what really arrived. A customer's screenshot proves nothing. */
 @Composable
-fun MerchantHome(store: Store, onLogout: () -> Unit, onLoggedOut: () -> Unit) {
+fun MerchantHome(store: Store, onLogout: () -> Unit, onLoggedOut: () -> Unit, onFeed: () -> Unit = {}, onHistory: () -> Unit = {}) {
     val context = LocalContext.current
     var data by remember { mutableStateOf<JSONObject?>(null) }
     var problem by remember { mutableStateOf("") }
@@ -202,6 +202,7 @@ fun MerchantHome(store: Store, onLogout: () -> Unit, onLoggedOut: () -> Unit) {
     Box(Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = bars.calculateTopPadding() + 12.dp, bottom = bars.calculateBottomPadding() + 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             item { RoleHeader(data?.optString("name")?.ifEmpty { null } ?: "Your shop", data?.optString("shop") ?: "Merchant", onLogout) }
+            item { FeedHistoryRow(onFeed, onHistory) }
             item {
                 Column(Modifier.fillMaxWidth().clip(CARD_SHAPE).background(BrandBrush).padding(20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Received", color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp)
@@ -246,7 +247,7 @@ fun MerchantHome(store: Store, onLogout: () -> Unit, onLoggedOut: () -> Unit) {
 
 /** The analyst's view: live numbers, attacks to launch, and alerts to review. */
 @Composable
-fun AdminHome(store: Store, onLogout: () -> Unit, onLoggedOut: () -> Unit) {
+fun AdminHome(store: Store, onLogout: () -> Unit, onLoggedOut: () -> Unit, onFeed: () -> Unit = {}, onHistory: () -> Unit = {}) {
     val context = LocalContext.current
     var kpis by remember { mutableStateOf<JSONObject?>(null) }
     var alerts by remember { mutableStateOf<List<JSONObject>>(emptyList()) }
@@ -272,6 +273,7 @@ fun AdminHome(store: Store, onLogout: () -> Unit, onLoggedOut: () -> Unit) {
     Box(Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = bars.calculateTopPadding() + 12.dp, bottom = bars.calculateBottomPadding() + 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             item { RoleHeader("Fraud analyst", if (running) "Live: payments are flowing" else "Paused", onLogout) }
+            item { FeedHistoryRow(onFeed, onHistory) }
             item {
                 Column(Modifier.fillMaxWidth().clip(CARD_SHAPE).background(BrandBrush).padding(20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Money stopped before it left", color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp)
@@ -328,5 +330,13 @@ fun AdminHome(store: Store, onLogout: () -> Unit, onLoggedOut: () -> Unit) {
             }
         }
         Box(Modifier.fillMaxWidth().height(bars.calculateTopPadding()).background(Ink))
+    }
+}
+
+@Composable
+private fun FeedHistoryRow(onFeed: () -> Unit, onHistory: () -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        SecondaryButton(tr("feed"), Modifier.weight(1f), R.drawable.ic_ui_flag, onFeed)
+        SecondaryButton(tr("history"), Modifier.weight(1f), R.drawable.ic_ui_check, onHistory)
     }
 }

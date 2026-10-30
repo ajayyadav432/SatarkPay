@@ -49,9 +49,10 @@ class PayFlowTest {
     }
 
     @org.junit.Before fun logIn() { logInAs("user") }
-    @org.junit.After fun endLogin() { SatarkClient.token = null }
+    @org.junit.After fun endLogin() { SatarkClient.token = null; AppLang.code = "en" }
 
     private fun logInAs(role: String) {
+        store.serverUrl = Store.USB_SERVER
         SatarkClient.token = null
         SatarkClient.token = SatarkClient.testLogin(store.serverUrl, role).getString("token")
     }
@@ -214,5 +215,36 @@ class PayFlowTest {
         rule.waitUntil(15000) { rule.onAllNodesWithText("Do not open or pay", substring = true).fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("State Bank of India", substring = true).assertExists()
         screenshot("result_link")
+    }
+
+    @Test fun aCheckShowsItsStepsAndCanBeSkipped() {
+        val result = SatarkClient.scorePayment(store.serverUrl, "refund.helpdesk@simbank", 2999.0, "PAY", "Refund")
+        rule.setContent { Themed { ResultScreen(PayCheck("refund.helpdesk@simbank", 2999.0, result, null), store) {} } }
+        rule.onNodeWithText("Checking this payment").assertExists()
+        rule.onNodeWithText("Skip to the result").performClick()
+        rule.waitUntil(5000) { rule.onAllNodesWithText("Risk ", substring = true).fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    @Test fun aDecisionReadsInTamil() {
+        val result = SatarkClient.scorePayment(store.serverUrl, "refund.helpdesk@simbank", 2999.0, "PAY", "Refund")
+        AppLang.code = "ta"
+        rule.setContent { Themed { ResultScreen(PayCheck("refund.helpdesk@simbank", 2999.0, result, null), store) {} } }
+        rule.waitUntil(15000) { rule.onAllNodesWithText("ஆபத்து", substring = true).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText("இந்த மோசடியைப் புகார் செய்").performScrollTo().assertExists()
+    }
+
+    @Test fun theFeedShowsPostsWithRealDetailsHidden() {
+        SatarkClient.addPost(store.serverUrl, "", "Other", "Phone test post, call 9876543210 about this.")
+        rule.setContent { Themed { FeedScreen(store) {} } }
+        rule.waitUntil(10000) { rule.onAllNodesWithText("Phone test post", substring = true).fetchSemanticsNodes().isNotEmpty() }
+        rule.onAllNodesWithText("9876543210", substring = true).assertCountEquals(0)
+    }
+
+    @Test fun historyListsAChecksAndExports() {
+        SatarkClient.scorePayment(store.serverUrl, "history.check@simbank", 10.0, "PAY", "")
+        rule.setContent { Themed { HistoryScreen(store) {} } }
+        rule.waitUntil(10000) { rule.onAllNodesWithText("history.check@simbank", substring = true).fetchSemanticsNodes().isNotEmpty() }
+        assert(SatarkClient.exportHistory(store.serverUrl, "csv", "history.check").contains("history.check@simbank"))
+        assert(org.json.JSONArray(SatarkClient.exportHistory(store.serverUrl, "json", "history.check")).length() > 0)
     }
 }

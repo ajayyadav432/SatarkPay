@@ -101,6 +101,8 @@ private sealed class Screen {
     data object Login : Screen()
     data object Message : Screen()
     data object LinkEntry : Screen()
+    data object Feed : Screen()
+    data object History : Screen()
     data class Review(val qr: Scanned.Upi?) : Screen()
     data class Result(val check: PayCheck) : Screen()
     data class Link(val url: String) : Screen()
@@ -109,7 +111,7 @@ private sealed class Screen {
 @Composable
 private fun App(shared: Uri?) {
     val context = LocalContext.current
-    val store = remember { Store(context) }
+    val store = remember { Store(context).also { AppLang.code = it.language } }
     var screen by remember { mutableStateOf<Screen>(if (store.sessionToken != null) Screen.Home else Screen.Login) }
     var role by remember { mutableStateOf(store.sessionRole) }
     var note by remember { mutableStateOf("") }
@@ -152,13 +154,15 @@ private fun App(shared: Uri?) {
     when (val s = screen) {
         Screen.Login -> LoginScreen(store, onConnection = { screen = Screen.Connection }) { role = store.sessionRole; screen = Screen.Home }
         Screen.Home -> when (role) {
-            "merchant" -> MerchantHome(store, ::logOut, ::endSession)
-            "admin" -> AdminHome(store, ::logOut, ::endSession)
+            "merchant" -> MerchantHome(store, ::logOut, ::endSession, { screen = Screen.Feed }, { screen = Screen.History })
+            "admin" -> AdminHome(store, ::logOut, ::endSession, { screen = Screen.Feed }, { screen = Screen.History })
             else -> HomeScreen(store, note, onScan = { note = ""; screen = Screen.Scan }, onEnter = { note = ""; screen = Screen.Review(null) },
-                onPicture = { note = ""; showPicture(it) }, onConnection = { screen = Screen.Connection }, onLogout = ::logOut, onMessage = { screen = Screen.Message }, onLink = { screen = Screen.LinkEntry })
+                onPicture = { note = ""; showPicture(it) }, onConnection = { screen = Screen.Connection }, onLogout = ::logOut, onMessage = { screen = Screen.Message }, onFeed = { screen = Screen.Feed }, onHistory = { screen = Screen.History }, onLink = { screen = Screen.LinkEntry })
         }
         Screen.Scan -> ScanScreen(home, ::show, ::showPicture)
         Screen.Message -> MessageScreen(store, home)
+        Screen.Feed -> FeedScreen(store, home)
+        Screen.History -> HistoryScreen(store, home)
         Screen.LinkEntry -> LinkEntryScreen(home) { screen = Screen.Link(it) }
         Screen.Connection -> ConnectionScreen(store) { screen = if (store.sessionToken != null) Screen.Home else Screen.Login }
         is Screen.Review -> ReviewScreen(s.qr, store, home) { screen = Screen.Result(it) }
@@ -182,7 +186,7 @@ private fun permissionsNeeded(): Array<String> =
     else arrayOf(Manifest.permission.RECEIVE_SMS)
 
 @Composable
-private fun HomeScreen(store: Store, note: String, onScan: () -> Unit, onEnter: () -> Unit, onPicture: (Uri) -> Unit, onConnection: () -> Unit, onLogout: () -> Unit, onMessage: () -> Unit, onLink: () -> Unit) {
+private fun HomeScreen(store: Store, note: String, onScan: () -> Unit, onEnter: () -> Unit, onPicture: (Uri) -> Unit, onConnection: () -> Unit, onLogout: () -> Unit, onFeed: () -> Unit, onHistory: () -> Unit, onMessage: () -> Unit, onLink: () -> Unit) {
     val context = LocalContext.current
     var recent by remember { mutableStateOf(store.recent()) }
     var online by remember { mutableStateOf<Boolean?>(null) }
@@ -214,7 +218,7 @@ private fun HomeScreen(store: Store, note: String, onScan: () -> Unit, onEnter: 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(painterResource(R.drawable.ic_logo), contentDescription = "SatarkPay logo", modifier = Modifier.size(42.dp))
                 Spacer(Modifier.width(10.dp))
-                Text("SatarkPay", fontWeight = FontWeight.Bold, fontSize = 24.sp, color = TextMain, modifier = Modifier.weight(1f))
+                Text("SatarkPay", fontWeight = FontWeight.Bold, fontSize = 21.sp, maxLines = 1, color = TextMain, modifier = Modifier.weight(1f))
                 ConnectionPill(online, onConnection)
                 Spacer(Modifier.width(8.dp))
                 LogoutButton(onLogout)
@@ -222,28 +226,35 @@ private fun HomeScreen(store: Store, note: String, onScan: () -> Unit, onEnter: 
         }
         item {
             Column(Modifier.fillMaxWidth().clip(CARD_SHAPE).background(BrandBrush).padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Check before you pay", fontWeight = FontWeight.Bold, fontSize = 26.sp, color = Color.White)
-                Text("Scan any UPI QR. See the risk and the reasons before you enter your PIN.", fontSize = 14.sp, color = Color.White.copy(alpha = 0.9f))
+                Text(tr("hero"), fontWeight = FontWeight.Bold, fontSize = 26.sp, color = Color.White)
+                Text(tr("hero_sub"), fontSize = 14.sp, color = Color.White.copy(alpha = 0.9f))
                 Spacer(Modifier.height(10.dp))
                 Row(Modifier.fillMaxWidth().height(58.dp).clip(PILL_SHAPE).background(Color.White).clickable(onClick = onScan),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)) {
                     UiIcon(R.drawable.ic_ui_qr, null, Ink, 24.dp)
-                    Text("Scan UPI QR", color = Ink, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                    Text(tr("scan"), color = Ink, fontWeight = FontWeight.Bold, fontSize = 17.sp)
                 }
             }
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SecondaryButton("From photo", Modifier.weight(1f), R.drawable.ic_ui_image) { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
-                SecondaryButton("Enter UPI ID", Modifier.weight(1f), R.drawable.ic_ui_edit, onEnter)
+                SecondaryButton(tr("photo"), Modifier.weight(1f), R.drawable.ic_ui_image) { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+                SecondaryButton(tr("enter_id"), Modifier.weight(1f), R.drawable.ic_ui_edit, onEnter)
             }
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SecondaryButton("Check message", Modifier.weight(1f), R.drawable.ic_ui_sms, onMessage)
-                SecondaryButton("Check link", Modifier.weight(1f), R.drawable.ic_ui_link, onLink)
+                SecondaryButton(tr("check_message"), Modifier.weight(1f), R.drawable.ic_ui_sms, onMessage)
+                SecondaryButton(tr("check_link"), Modifier.weight(1f), R.drawable.ic_ui_link, onLink)
             }
         }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                SecondaryButton(tr("feed"), Modifier.weight(1f), R.drawable.ic_ui_flag, onFeed)
+                SecondaryButton(tr("history"), Modifier.weight(1f), R.drawable.ic_ui_check, onHistory)
+            }
+        }
+        item { LanguageRow(store) }
         if (note.isNotEmpty()) item { Text(note, color = RiskWarn, fontSize = 14.sp) }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -281,8 +292,8 @@ private fun HomeScreen(store: Store, note: String, onScan: () -> Unit, onEnter: 
 @Composable
 private fun ConnectionPill(online: Boolean?, onClick: () -> Unit) {
     val (text, color) = when (online) {
-        true -> "Connected" to RiskSafe
-        false -> "Laptop offline" to RiskBlock
+        true -> tr("connected") to RiskSafe
+        false -> tr("offline") to RiskBlock
         null -> "Checking" to TextSoft
     }
     Row(Modifier.clip(PILL_SHAPE).background(color.copy(alpha = 0.16f)).clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 8.dp),
@@ -313,11 +324,16 @@ private fun ConnectionScreen(store: Store, onBack: () -> Unit) {
     fun refresh() { unchecked = store.recent().count { it.level == null } }
 
     Column(Modifier.fillMaxSize().safeDrawingPadding().padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        ScreenTitle("Laptop connection", onBack)
-        Text("Over USB, run ./run.sh phone on the laptop and use http://127.0.0.1:8000. Over Wi-Fi, use the address printed by ./run.sh wifi.", color = TextSoft, fontSize = 14.sp)
-        OutlinedTextField(value = server, onValueChange = { server = it; store.serverUrl = it }, singleLine = true,
+        ScreenTitle(tr("conn_title"), onBack)
+        LanguageRow(store)
+        val mode = when { server == Store.ONLINE_SERVER -> "online"; server == Store.USB_SERVER -> "usb"; else -> "wifi" }
+        listOf(Triple("online", "conn_online", Store.ONLINE_SERVER), Triple("wifi", "conn_wifi", if (mode == "wifi") server else "http://"), Triple("usb", "conn_usb", Store.USB_SERVER)).forEach { (key, label, address) ->
+            if (mode == key) PrimaryButton(tr(label)) {} else SecondaryButton(tr(label)) { server = address; store.serverUrl = address; status = "" }
+        }
+        Text(tr(if (mode == "online") "conn_online_note" else if (mode == "usb") "conn_usb_note" else "conn_wifi_note"), color = TextSoft, fontSize = 14.sp)
+        if (mode == "wifi") OutlinedTextField(value = server, onValueChange = { server = it; store.serverUrl = it }, singleLine = true,
             label = { Text("SatarkPay address (laptop)") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = code, onValueChange = { code = it; store.pairingCode = it }, singleLine = true,
+        if (mode != "online") OutlinedTextField(value = code, onValueChange = { code = it; store.pairingCode = it }, singleLine = true,
             label = { Text("Pairing code (for SMS)") }, modifier = Modifier.fillMaxWidth())
         PrimaryButton("Test connection", icon = R.drawable.ic_ui_laptop, onClick = {
             status = "Checking…"
@@ -327,14 +343,14 @@ private fun ConnectionScreen(store: Store, onBack: () -> Unit) {
                 (context as? ComponentActivity)?.runOnUiThread {
                     refresh()
                     status = when {
-                        !ok -> "✗ Cannot reach the laptop"
+                        !ok -> "✗ Cannot reach SatarkPay"
                         fixed > 0 -> "✓ Connected · $fixed rechecked"
                         else -> "✓ Connected"
                     }
                 }
             }.start()
         })
-        SecondaryButton("Try a sample scam SMS", icon = R.drawable.ic_ui_sms) {
+        if (mode != "online") SecondaryButton("Try a sample scam SMS", icon = R.drawable.ic_ui_sms) {
             status = "Sending sample…"
             Thread {
                 // Same path as a real SMS (laptop analysis + notification), clearly marked as a sample.

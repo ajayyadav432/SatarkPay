@@ -12,6 +12,10 @@ class Store(context: Context) {
         get() = prefs.getString("server", DEFAULT_SERVER) ?: DEFAULT_SERVER
         set(v) = prefs.edit().putString("server", v.trim().trimEnd('/')).apply()
 
+    var language: String
+        get() = prefs.getString("language", "en") ?: "en"
+        set(v) = prefs.edit().putString("language", v).apply()
+
     var pairingCode: String
         get() = prefs.getString("code", "") ?: ""
         set(v) = prefs.edit().putString("code", v.trim()).apply()
@@ -47,7 +51,9 @@ class Store(context: Context) {
 
     companion object {
         // The laptop over USB, with ./run.sh phone running. Over Wi-Fi use the laptop's address. On the emulator use http://10.0.2.2:8000.
-        const val DEFAULT_SERVER = "http://127.0.0.1:8000"
+        const val ONLINE_SERVER = "https://satarkpay.vercel.app"
+        const val USB_SERVER = "http://127.0.0.1:8000"
+        const val DEFAULT_SERVER = ONLINE_SERVER
         const val MAX_RECENT = 30
     }
 }

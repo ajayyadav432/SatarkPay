@@ -91,7 +91,34 @@ object SatarkClient {
     fun checkUrl(server: String, url: String): JSONObject =
         request("$server/api/check-url?u=" + URLEncoder.encode(url, "UTF-8"), "GET", null, null)
 
-    private fun request(url: String, method: String, code: String?, body: String?): JSONObject {
+    fun posts(server: String): JSONObject = request("$server/api/v1/posts?limit=50", "GET", null, null)
+
+    fun addPost(server: String, payee: String, category: String, body: String) {
+        request("$server/api/v1/posts", "POST", null, JSONObject().put("payee", payee).put("category", category).put("body", body).toString())
+    }
+
+    fun vote(server: String, id: Int, value: Int) {
+        request("$server/api/v1/posts/$id/vote", "POST", null, JSONObject().put("value", value).toString())
+    }
+
+    fun comments(server: String, id: Int): JSONObject = request("$server/api/v1/posts/$id/comments", "GET", null, null)
+
+    fun addComment(server: String, id: Int, body: String) {
+        request("$server/api/v1/posts/$id/comments", "POST", null, JSONObject().put("body", body).toString())
+    }
+
+    fun history(server: String, q: String): JSONObject =
+        request("$server/api/v1/history?q=" + URLEncoder.encode(q, "UTF-8"), "GET", null, null)
+
+    fun clearHistory(server: String) { request("$server/api/v1/history", "DELETE", null, null) }
+
+    /** The downloaded file as text: CSV, or a JSON list. */
+    fun exportHistory(server: String, format: String, q: String): String =
+        requestText("$server/api/v1/history/export.$format?q=" + URLEncoder.encode(q, "UTF-8"), "GET", null, null)
+
+    private fun request(url: String, method: String, code: String?, body: String?): JSONObject = JSONObject(requestText(url, method, code, body))
+
+    private fun requestText(url: String, method: String, code: String?, body: String?): String {
         val conn = URL(url).openConnection() as HttpURLConnection
         try {
             conn.requestMethod = method
@@ -112,7 +139,7 @@ object SatarkClient {
                 if (status == 401 && detail == "Please log in.") throw LoginNeeded(detail)
                 throw IllegalStateException(detail?.ifEmpty { null } ?: "SatarkPay answered $status")
             }
-            return JSONObject(text)
+            return text
         } finally {
             conn.disconnect()
         }

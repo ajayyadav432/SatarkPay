@@ -226,11 +226,16 @@ data class PayCheck(val payee: String, val amount: Double, val result: JSONObjec
 /** The decision, the reasons, and what the person can do next. This app never moves real money. */
 @Composable
 fun ResultScreen(check: PayCheck, store: Store, onDone: () -> Unit) {
+    var played by remember { mutableStateOf(false) }
+    if (played) ResultBody(check, store, onDone) else StageView(check.result!!) { played = true }
+}
+
+@Composable
+private fun ResultBody(check: PayCheck, store: Store, onDone: () -> Unit) {
     val context = LocalContext.current
     val r = check.result!!
     val action = r.optString("action")
     val simulated = isSimulatedId(check.payee)
-    var hindi by remember { mutableStateOf(false) }
     var finished by remember { mutableStateOf<String?>(null) }
     var problem by remember { mutableStateOf("") }
     var left by remember { mutableIntStateOf(when (action) { "WARN" -> WARN_PAUSE_SECONDS; "HOLD" -> HOLD_PAUSE_SECONDS; else -> 0 }) }
@@ -242,7 +247,7 @@ fun ResultScreen(check: PayCheck, store: Store, onDone: () -> Unit) {
             (context as? ComponentActivity)?.runOnUiThread { if (err == null) finished = then else problem = err }
         }.start()
     }
-    val lang = if (hindi) "text_hi" else "text_en"
+    val lang = "text_" + AppLang.code
     val reasons = r.optJSONArray("reasons")?.let { arr ->
         (0 until arr.length()).map { arr.getJSONObject(it) }
             .filter { simulated || it.optString("source") != "model" }     // "this account is 1 day old" is false for an ID the system has simply never seen
@@ -250,9 +255,8 @@ fun ResultScreen(check: PayCheck, store: Store, onDone: () -> Unit) {
     }.orEmpty()
     val advice = r.optJSONArray("advice")?.let { arr -> (0 until arr.length()).map { arr.getJSONObject(it).optString(lang) } }.orEmpty()
     val headline = when {
-        !simulated && action == "ALLOW" -> if (hindi) "कोई चेतावनी संकेत नहीं मिला" else "No warning signs found"
-        hindi -> r.optString("headline_hi")
-        else -> r.optString("headline_en")
+        !simulated && action == "ALLOW" -> tr("no_warnings")
+        else -> r.optString("headline_" + AppLang.code).ifEmpty { r.optString("headline_en") }
     }
     // Green would read as "safe". For a real ID the system does not know that, so the banner stays neutral.
     val banner = if (!simulated && action == "ALLOW") RiskUnknown else ACTION_COLOR[action] ?: RiskUnknown
@@ -262,7 +266,7 @@ fun ResultScreen(check: PayCheck, store: Store, onDone: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             RiskGauge(r.optInt("score"), banner)
             Text(headline, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp, textAlign = TextAlign.Center)
-            Text("Risk ${r.optInt("score")} / 100", color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp)
+            Text("${tr("risk")} ${r.optInt("score")} / 100", color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp)
         }
         Column(Modifier.navigationBarsPadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Panel(padding = 14.dp) {
@@ -271,12 +275,12 @@ fun ResultScreen(check: PayCheck, store: Store, onDone: () -> Unit) {
                         Text("₹" + "%,.2f".format(check.amount), fontWeight = FontWeight.Bold, fontSize = 20.sp, color = TextMain)
                         Text(check.payee, fontFamily = FontFamily.Monospace, fontSize = 13.sp, color = TextSoft)
                     }
-                    SecondaryButton(if (hindi) "English" else "हिंदी", Modifier.size(width = 96.dp, height = 44.dp)) { hindi = !hindi }
                 }
             }
+            LanguageRow(store)
             if (reasons.isNotEmpty()) Panel {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(if (hindi) "क्यों" else "Why", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = TextMain)
+                    Text(tr("why"), fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = TextMain)
                     reasons.forEach {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             IconDot(R.drawable.ic_ui_warning, banner, 28.dp)
@@ -286,27 +290,34 @@ fun ResultScreen(check: PayCheck, store: Store, onDone: () -> Unit) {
                 }
             }
             if (reasons.isEmpty() && action != "ALLOW") Text(
-                if (hindi) "इस भुगतान का तरीका आपके सामान्य भुगतानों से अलग है।" else "This payment does not look like your usual payments.",
+                "This payment does not look like your usual payments.",
                 fontSize = 14.sp, color = TextMain)
             advice.forEach { Text(it, fontSize = 14.sp, color = TextSoft) }
-            if (!simulated) Text(
-                if (hindi) "यह असली UPI ID है। SatarkPay के पास सिर्फ़ सिम्युलेटेड भुगतानों का इतिहास है, इसलिए यह सिर्फ़ ID, राशि और नोट देखता है। यह गारंटी नहीं है कि यह सुरक्षित है।"
-                else "This is a real UPI ID. SatarkPay only has history for simulated payments, so this checks the ID, the amount and the note. It is not a guarantee that the payment is safe.",
+            if (!simulated) Text(tr("real_id"),
                 fontSize = 13.sp, color = TextSoft)
 
             val done = finished
             if (done != null) {
                 Text(done, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = TextMain)
-                PrimaryButton("Done", onClick = onDone)
+                PrimaryButton(tr("done"), onClick = onDone)
             } else {
                 if (action != "ALLOW") {
-                    PrimaryButton("Report this scam", color = RiskBlock, icon = R.drawable.ic_ui_flag) { decide("reported", "Reported. No money moved.") }
-                    SecondaryButton("Call 1930 (cyber fraud helpline)", icon = R.drawable.ic_ui_phone) { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:1930"))) }
+                    PrimaryButton(tr("report"), color = RiskBlock, icon = R.drawable.ic_ui_flag) { decide("reported", "Reported. No money moved.") }
+                    SecondaryButton(tr("call"), icon = R.drawable.ic_ui_phone) { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:1930"))) }
                 }
-                SecondaryButton(if (simulated) "Do not pay" else "Done") { decide("cancelled", "Stopped. No money moved.") }
+                SecondaryButton(if (simulated) tr("dont_pay") else tr("done")) { decide("cancelled", "Stopped. No money moved.") }
                 // Real money moves only in the person's own UPI app, after their PIN. Never for a blocked payment.
                 if (!simulated && action != "BLOCK") {
-                    PrimaryButton(if (left > 0) "Open payment app (wait $left s)" else "Open payment app", enabled = left <= 0, icon = R.drawable.ic_ui_phone) {
+                    UpiAppRow(enabled = left <= 0) { app ->
+                        val link = Intent(Intent.ACTION_VIEW, Uri.parse(UpiQr.paymentLink(check.payee, check.name, check.amount, check.note))).setPackage(app.pkg)
+                        try {
+                            context.startActivity(link)
+                            decide("cancelled", "Opened ${app.label}. Check the details there before you enter your PIN.")
+                        } catch (e: android.content.ActivityNotFoundException) {
+                            problem = "No UPI app was found on this phone."
+                        }
+                    }
+                    PrimaryButton(if (left > 0) "${tr("open_app")} ($left s)" else tr("open_app"), enabled = left <= 0, icon = R.drawable.ic_ui_phone) {
                         val link = Intent(Intent.ACTION_VIEW, Uri.parse(UpiQr.paymentLink(check.payee, check.name, check.amount, check.note)))
                         try {
                             context.startActivity(Intent.createChooser(link, "Pay with"))
@@ -315,7 +326,7 @@ fun ResultScreen(check: PayCheck, store: Store, onDone: () -> Unit) {
                             problem = "No UPI app was found on this phone."
                         }
                     }
-                    Text("GPay, PhonePe, Paytm or any UPI app. You approve it there with your PIN. SatarkPay never sees your PIN.", fontSize = 13.sp, color = TextSoft)
+                    Text(tr("pin_note"), fontSize = 13.sp, color = TextSoft)
                 }
                 // Only simulated money can move here.
                 if (simulated && action != "BLOCK") {

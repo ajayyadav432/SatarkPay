@@ -6,7 +6,7 @@ Stops a scam UPI payment before the money is gone, and says why.
 SPHINX'26, MNIT Jaipur. Problem statement 3.2: *Real-Time Fraud Detection for UPI and Digital Payments*.
 
 Every payment is scored before it goes through. It gets a risk score from 0 to 100, a decision (Allow, Warn, Hold or Block) and the reasons
-in plain English and Hindi. There is a live dashboard for analysts, an alert screen for the person paying, a view for small merchants and one API call for apps.
+in English, Hindi, Bengali, Marathi, Tamil or Telugu. There is a live dashboard for analysts, an alert screen for the person paying, a view for small merchants and one API call for apps.
 It runs offline on one laptop, and there is a public test copy at **https://satarkpay.vercel.app**.
 
 > **Everything here is simulated.** No real money, real accounts or real UPI connection. All UPI IDs end in `@sim...`, so that a simulated "mule" can never match a real person.
@@ -43,12 +43,22 @@ On a laptop, `./run.sh` creates passwords for the demo accounts (`sunita`, `rame
 
 Built with `cd android && ./gradlew assembleDebug`. Log in, or use a test login, then:
 
-- **Scan UPI QR**, from the camera, a screenshot or a shared picture. It shows what the QR says, then the decision and reasons in English and Hindi.
-- **Open payment app** hands a checked payment on a real UPI ID to GPay, PhonePe, Paytm or any UPI app. The person approves it there with their PIN, and SatarkPay never sees it. A blocked payment is not handed over. A warned or held one waits first.
+- **Scan UPI QR**, from the camera, a screenshot or a shared picture. It shows what the QR says, then each step of the check, then the decision and reasons in six languages.
+- **Open payment app** hands a checked payment on a real UPI ID to a UPI app, and the app lists the UPI apps really installed on the phone. The person approves it there with their PIN, and SatarkPay never sees it. A blocked payment is not handed over. A warned or held one waits first.
 - **Check message** and **Check link** check something pasted in.
+- **Scam feed** and **History**, the same as on the website, with history saved as CSV or JSON.
+- **Connection** chooses Online (the default, no cable), Laptop over Wi-Fi, or Laptop over USB cable.
 - **SMS protection** checks incoming SMS, with the person's permission. Messages go only to the team's laptop, and never to an `https` server such as the Vercel copy.
 
 New to the project? Read the [Project Guide](docs/SatarkPay_Project_Guide.pdf). To test it, use the [Testing Guide](docs/SatarkPay_Testing_Guide.pdf).
+
+## Community safety
+
+- **Scam feed** (`/feed`): anyone can read it, and logged-in people can post, vote and comment. Real UPI IDs and phone numbers are masked, because a report is an accusation nobody has checked.
+- **Reports warn, an admin blocks.** Reports from 3 different accounts add a warning to payments to that ID. Only an admin can block it, so that a group cannot get an honest shop blocked. The server enforces a block even if someone calls the API directly. A public test admin can only block simulated IDs.
+- **History** (`/history`): each account sees only its own checks, with filters and CSV and JSON downloads. The words of checked messages are not kept.
+- **Storage:** SQLite on a laptop, or Postgres when `SATARKPAY_DATABASE_URL` is set. Without a database, the online copy loses the feed and history whenever it restarts.
+- **Translations** were written without a native speaker's review, so the wording may not be natural. A sentence with no translation stays in English.
 
 ## Run it
 

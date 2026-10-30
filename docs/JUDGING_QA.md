@@ -138,6 +138,18 @@ Where the words give it away, the other layers save it. Where only behaviour doe
 
 **Did you build this in 24 hours?** No, and say so. It builds on SatarkPay, and the code was prepared before the event. `docs/REUSED_CODE.md` lists exactly what came from where.
 
+## Community and languages
+
+**Can a group get an honest shop blocked by reporting it?** No. Reports from 3 accounts only add a warning that says the reports are not verified. Only an admin can block. One account counts once. Fake accounts could still raise a warning, which is a known limit: sign-up has no identity check.
+
+**Why do you hide part of the UPI ID in the feed?** A report is an accusation nobody has checked, and a UPI ID often contains a phone number.
+
+**Why no cashback or offers comparison?** Our focus is security. We have no real offer data and would not invent any. It could come later, using offers published by the apps.
+
+**Do you send SMS to the cloud?** No. Incoming SMS go only to the team's laptop. In online mode they are not sent anywhere, and a person can paste a message to check it.
+
+**Are the translations checked?** Not yet by native speakers. All numbers and names in a reason come from the same real values as the English.
+
 ## Who answers what
 
 Everyone should know the one-sentence pitch, the formula, why no LLM, and that the data is synthetic.

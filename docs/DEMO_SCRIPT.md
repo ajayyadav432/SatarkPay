@@ -56,6 +56,10 @@ Check the two percentages against `/how` before saying them.
 
 **4:50 Close (Ajay).** "SatarkPay gives every Indian a second opinion before they pay."
 
+## If you have one more minute
+
+Open **Scam feed** and show a post with its ID partly hidden. Log in as admin and block an ID from the most reported list, then pay it: the payment is stopped. On the phone, scan a QR, let the steps run, change the language to Tamil or Bengali, and show the row of UPI apps. Do not say the translations are checked.
+
 ## If something goes wrong
 
 | What | Do |
