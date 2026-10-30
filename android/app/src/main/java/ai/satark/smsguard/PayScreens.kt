@@ -199,7 +199,7 @@ fun ReviewScreen(start: Scanned.Upi?, store: Store, onBack: () -> Unit, onResult
             Thread {
                 val check = try {
                     val r = SatarkClient.scorePayment(store.serverUrl, id, value, if (start != null) "QR" else "PAY", note.trim())
-                    PayCheck(id, value, r, null)
+                    PayCheck(id, value, r, null, start?.name, note.trim())
                 } catch (e: Exception) {
                     PayCheck(id, value, null, e.message ?: e.javaClass.simpleName)
                 }
@@ -215,7 +215,7 @@ fun ReviewScreen(start: Scanned.Upi?, store: Store, onBack: () -> Unit, onResult
 }
 
 /** One finished check. */
-data class PayCheck(val payee: String, val amount: Double, val result: JSONObject?, val error: String?) {
+data class PayCheck(val payee: String, val amount: Double, val result: JSONObject?, val error: String?, val name: String? = null, val note: String? = null) {
     fun toChecked(note: String): Checked {
         val r = result!!
         return Checked(System.currentTimeMillis(), "QR: $payee", "₹" + "%,.0f".format(amount) + if (note.isNotEmpty()) " · $note" else "",
@@ -304,7 +304,20 @@ fun ResultScreen(check: PayCheck, store: Store, onDone: () -> Unit) {
                     SecondaryButton("Call 1930 (cyber fraud helpline)", icon = R.drawable.ic_ui_phone) { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:1930"))) }
                 }
                 SecondaryButton(if (simulated) "Do not pay" else "Done") { decide("cancelled", "Stopped. No money moved.") }
-                // Only simulated money can move here. For a real ID the person pays in their own UPI app, or does not.
+                // Real money moves only in the person's own UPI app, after their PIN. Never for a blocked payment.
+                if (!simulated && action != "BLOCK") {
+                    PrimaryButton(if (left > 0) "Open payment app (wait $left s)" else "Open payment app", enabled = left <= 0, icon = R.drawable.ic_ui_phone) {
+                        val link = Intent(Intent.ACTION_VIEW, Uri.parse(UpiQr.paymentLink(check.payee, check.name, check.amount, check.note)))
+                        try {
+                            context.startActivity(Intent.createChooser(link, "Pay with"))
+                            decide("cancelled", "Opened your payment app. Check the details there before you enter your PIN.")
+                        } catch (e: android.content.ActivityNotFoundException) {
+                            problem = "No UPI app was found on this phone."
+                        }
+                    }
+                    Text("GPay, PhonePe, Paytm or any UPI app. You approve it there with your PIN. SatarkPay never sees your PIN.", fontSize = 13.sp, color = TextSoft)
+                }
+                // Only simulated money can move here.
                 if (simulated && action != "BLOCK") {
                     val label = when {
                         left > 0 -> "Pay anyway (wait $left s)"
@@ -316,6 +329,76 @@ fun ResultScreen(check: PayCheck, store: Store, onDone: () -> Unit) {
                 }
             }
             if (problem.isNotEmpty()) Text(problem, color = RiskBlock, fontSize = 14.sp)
+        }
+    }
+}
+
+/** Paste a message someone sent you. */
+@Composable
+fun MessageScreen(store: Store, onBack: () -> Unit) {
+    val context = LocalContext.current
+    var text by remember { mutableStateOf("") }
+    var answer by remember { mutableStateOf<JSONObject?>(null) }
+    var problem by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        ScreenTitle("Check a message", onBack)
+        Text("Paste an SMS or WhatsApp message. It is sent to the laptop to be checked.", color = TextSoft, fontSize = 14.sp)
+        OutlinedTextField(value = text, onValueChange = { text = it.take(5000); answer = null }, minLines = 4, label = { Text("Message") }, modifier = Modifier.fillMaxWidth())
+        PrimaryButton(if (busy) "Checking…" else "Check this message", enabled = !busy && text.isNotBlank(), icon = R.drawable.ic_ui_sms) {
+            busy = true
+            problem = ""
+            val message = text.trim()
+            Thread {
+                val result = runCatching { SatarkClient.checkSms(store.serverUrl, store.pairingCode, "Pasted message", message, "paste-${System.currentTimeMillis()}") }
+                result.getOrNull()?.let { store.add(Checked.fromResponse("Pasted message", message, it)) }
+                (context as? ComponentActivity)?.runOnUiThread {
+                    busy = false
+                    answer = result.getOrNull()
+                    if (result.isFailure) problem = "Could not check: the laptop did not answer."
+                }
+            }.start()
+        }
+        answer?.let { VerdictCard(it.optInt("score"), it.optString("level"), (it.optJSONArray("reasons") ?: org.json.JSONArray()).let { a -> (0 until a.length()).map { i -> a.optString(i) } }) }
+        if (problem.isNotEmpty()) Text(problem, color = RiskBlock, fontSize = 14.sp)
+    }
+}
+
+/** Paste a link before opening it. */
+@Composable
+fun LinkEntryScreen(onBack: () -> Unit, onCheck: (String) -> Unit) {
+    var text by remember { mutableStateOf("") }
+    var problem by remember { mutableStateOf("") }
+    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        ScreenTitle("Check a link", onBack)
+        Text("Paste a link before you open it. The link is not opened.", color = TextSoft, fontSize = 14.sp)
+        OutlinedTextField(value = text, onValueChange = { text = it; problem = "" }, singleLine = true, label = { Text("Link") }, modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
+        PrimaryButton("Check this link", enabled = text.isNotBlank(), icon = R.drawable.ic_ui_link) {
+            val url = UpiQr.normaliseLink(text)
+            if (url != null) onCheck(url) else problem = "That does not look like a web link."
+        }
+        if (problem.isNotEmpty()) Text(problem, color = RiskBlock, fontSize = 14.sp)
+    }
+}
+
+@Composable
+private fun VerdictCard(score: Int, level: String, reasons: List<String>) {
+    val color = when (level) { "Safe", "Low" -> RiskUnknown; "Medium" -> RiskWarn; "High" -> RiskHold; else -> RiskBlock }
+    val quiet = level == "Safe" || level == "Low"
+    Column(Modifier.fillMaxWidth().clip(CARD_SHAPE).background(verdictBrush(color)).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        RiskGauge(score, color)
+        Text(if (quiet) "No strong scam signs found" else "$level risk. Do not reply, click or pay.", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp, textAlign = TextAlign.Center)
+    }
+    if (reasons.isNotEmpty()) Panel {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Why", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = TextMain)
+            reasons.forEach {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    IconDot(R.drawable.ic_ui_warning, color, 28.dp)
+                    Text(it, fontSize = 14.sp, color = TextMain, modifier = Modifier.weight(1f))
+                }
+            }
         }
     }
 }

@@ -99,6 +99,8 @@ private sealed class Screen {
     data object Scan : Screen()
     data object Connection : Screen()
     data object Login : Screen()
+    data object Message : Screen()
+    data object LinkEntry : Screen()
     data class Review(val qr: Scanned.Upi?) : Screen()
     data class Result(val check: PayCheck) : Screen()
     data class Link(val url: String) : Screen()
@@ -153,9 +155,11 @@ private fun App(shared: Uri?) {
             "merchant" -> MerchantHome(store, ::logOut, ::endSession)
             "admin" -> AdminHome(store, ::logOut, ::endSession)
             else -> HomeScreen(store, note, onScan = { note = ""; screen = Screen.Scan }, onEnter = { note = ""; screen = Screen.Review(null) },
-                onPicture = { note = ""; showPicture(it) }, onConnection = { screen = Screen.Connection }, onLogout = ::logOut)
+                onPicture = { note = ""; showPicture(it) }, onConnection = { screen = Screen.Connection }, onLogout = ::logOut, onMessage = { screen = Screen.Message }, onLink = { screen = Screen.LinkEntry })
         }
         Screen.Scan -> ScanScreen(home, ::show, ::showPicture)
+        Screen.Message -> MessageScreen(store, home)
+        Screen.LinkEntry -> LinkEntryScreen(home) { screen = Screen.Link(it) }
         Screen.Connection -> ConnectionScreen(store) { screen = if (store.sessionToken != null) Screen.Home else Screen.Login }
         is Screen.Review -> ReviewScreen(s.qr, store, home) { screen = Screen.Result(it) }
         is Screen.Result -> ResultScreen(s.check, store, home)
@@ -178,7 +182,7 @@ private fun permissionsNeeded(): Array<String> =
     else arrayOf(Manifest.permission.RECEIVE_SMS)
 
 @Composable
-private fun HomeScreen(store: Store, note: String, onScan: () -> Unit, onEnter: () -> Unit, onPicture: (Uri) -> Unit, onConnection: () -> Unit, onLogout: () -> Unit) {
+private fun HomeScreen(store: Store, note: String, onScan: () -> Unit, onEnter: () -> Unit, onPicture: (Uri) -> Unit, onConnection: () -> Unit, onLogout: () -> Unit, onMessage: () -> Unit, onLink: () -> Unit) {
     val context = LocalContext.current
     var recent by remember { mutableStateOf(store.recent()) }
     var online by remember { mutableStateOf<Boolean?>(null) }
@@ -232,6 +236,12 @@ private fun HomeScreen(store: Store, note: String, onScan: () -> Unit, onEnter: 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SecondaryButton("From photo", Modifier.weight(1f), R.drawable.ic_ui_image) { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
                 SecondaryButton("Enter UPI ID", Modifier.weight(1f), R.drawable.ic_ui_edit, onEnter)
+            }
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                SecondaryButton("Check message", Modifier.weight(1f), R.drawable.ic_ui_sms, onMessage)
+                SecondaryButton("Check link", Modifier.weight(1f), R.drawable.ic_ui_link, onLink)
             }
         }
         if (note.isNotEmpty()) item { Text(note, color = RiskWarn, fontSize = 14.sp) }

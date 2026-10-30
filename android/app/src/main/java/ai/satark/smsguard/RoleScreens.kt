@@ -88,15 +88,35 @@ private fun actionColor(action: String) = when (action) {
 fun LoginScreen(store: Store, onConnection: () -> Unit, onLoggedIn: () -> Unit) {
     val context = LocalContext.current
     var role by remember { mutableStateOf("user") }
+    var signingUp by remember { mutableStateOf(false) }
+    var name by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var problem by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
+    if (role == "admin") signingUp = false
 
-    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(20.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Spacer(Modifier.height(24.dp))
-        Image(painterResource(R.drawable.ic_logo), contentDescription = "SatarkPay logo", modifier = Modifier.size(72.dp).align(Alignment.CenterHorizontally))
-        Text("SatarkPay", fontWeight = FontWeight.Bold, fontSize = 30.sp, color = TextMain, modifier = Modifier.align(Alignment.CenterHorizontally))
+    fun run(call: () -> JSONObject) {
+        busy = true
+        problem = ""
+        Thread {
+            val result = runCatching(call)
+            (context as? ComponentActivity)?.runOnUiThread {
+                busy = false
+                result.onSuccess {
+                    store.saveSession(it.getString("token"), it.getString("role"), it.getString("name"))
+                    SatarkClient.token = store.sessionToken
+                    onLoggedIn()
+                }.onFailure {
+                    problem = if (it is java.io.IOException) "Cannot reach the laptop. Check the laptop connection." else it.message ?: "Could not log in."
+                }
+            }
+        }.start()
+    }
+
+    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(20.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Image(painterResource(R.drawable.ic_logo), contentDescription = "SatarkPay logo", modifier = Modifier.size(60.dp).align(Alignment.CenterHorizontally))
+        Text("SatarkPay", fontWeight = FontWeight.Bold, fontSize = 28.sp, color = TextMain, modifier = Modifier.align(Alignment.CenterHorizontally))
         Row(Modifier.fillMaxWidth().clip(PILL_SHAPE).background(PanelRaised).padding(4.dp)) {
             ROLES.forEach { (id, label, _) ->
                 val on = id == role
@@ -106,27 +126,23 @@ fun LoginScreen(store: Store, onConnection: () -> Unit, onLoggedIn: () -> Unit) 
             }
         }
         Text(ROLES.first { it.first == role }.third, color = TextSoft, fontSize = 14.sp)
+        val roleLabel = ROLES.first { it.first == role }.second
+        PrimaryButton("Use test login: $roleLabel", enabled = !busy) { run { SatarkClient.testLogin(store.serverUrl, role) } }
+        Text("No password needed. Simulated data only.", color = TextSoft, fontSize = 13.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+        if (signingUp) OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true,
+            label = { Text(if (role == "merchant") "Shop name" else "Your name") }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(value = username, onValueChange = { username = it }, singleLine = true, label = { Text("Username") }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(value = password, onValueChange = { password = it }, singleLine = true, label = { Text("Password") }, modifier = Modifier.fillMaxWidth(),
             visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
         if (problem.isNotEmpty()) Text(problem, color = RiskBlock, fontSize = 14.sp)
-        PrimaryButton(if (busy) "Logging in…" else "Log in", enabled = !busy && username.isNotBlank() && password.isNotEmpty()) {
-            busy = true
-            problem = ""
-            Thread {
-                val result = runCatching { SatarkClient.login(store.serverUrl, role, username.trim(), password) }
-                (context as? ComponentActivity)?.runOnUiThread {
-                    busy = false
-                    result.onSuccess {
-                        store.saveSession(it.getString("token"), it.getString("role"), it.getString("name"))
-                        SatarkClient.token = store.sessionToken
-                        onLoggedIn()
-                    }.onFailure {
-                        problem = if (it is java.io.IOException) "Cannot reach the laptop. Check the laptop connection." else it.message ?: "Could not log in."
-                    }
-                }
-            }.start()
+        SecondaryButton(when { busy -> "Please wait…"; signingUp -> "Sign up"; else -> "Log in" }) {
+            if (busy || username.isBlank() || password.isEmpty()) return@SecondaryButton
+            if (signingUp) run { SatarkClient.signUp(store.serverUrl, role, username.trim(), password, name.trim()) }
+            else run { SatarkClient.login(store.serverUrl, role, username.trim(), password) }
         }
+        if (role == "admin") Text("Admin accounts cannot be created here.", color = TextSoft, fontSize = 13.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+        else Text(if (signingUp) "Already have an account? Log in" else "New here? Sign up", color = Sky, fontWeight = FontWeight.Medium, fontSize = 15.sp,
+            modifier = Modifier.align(Alignment.CenterHorizontally).clip(PILL_SHAPE).clickable { signingUp = !signingUp; problem = "" }.padding(8.dp))
         SecondaryButton("Laptop connection", icon = R.drawable.ic_ui_laptop, onClick = onConnection)
     }
 }

@@ -1,0 +1,447 @@
+{
+ "set": "hand-written, fixed before the first run, not used for tuning",
+ "scams": 20,
+ "safe": 20,
+ "scams_flagged": 13,
+ "scams_stopped": 7,
+ "safe_flagged": 1,
+ "safe_stopped": 0,
+ "missed": [
+  {
+   "truth": "scam",
+   "payee": "buyer.quikr22@simaxis",
+   "amount": 4999,
+   "note": "receive payment from buyer",
+   "why": "scan to receive",
+   "action": "ALLOW",
+   "score": 20
+  },
+  {
+   "truth": "scam",
+   "payee": "kbc.lucky.draw@simybl",
+   "amount": 5000,
+   "note": "lottery processing fee",
+   "why": "prize",
+   "action": "ALLOW",
+   "score": 28
+  },
+  {
+   "truth": "scam",
+   "payee": "prize.claim.office@simaxis",
+   "amount": 2500,
+   "note": "claim your prize",
+   "why": "prize",
+   "action": "ALLOW",
+   "score": 26
+  },
+  {
+   "truth": "scam",
+   "payee": "workfromhome.task@simybl",
+   "amount": 3000,
+   "note": "task deposit",
+   "why": "job fee",
+   "action": "ALLOW",
+   "score": 35
+  },
+  {
+   "truth": "scam",
+   "payee": "electricity.bill.cut@simybl",
+   "amount": 1500,
+   "note": "pay now or power cut tonight",
+   "why": "bill threat",
+   "action": "ALLOW",
+   "score": 34
+  },
+  {
+   "truth": "scam",
+   "payee": "vikas.t7702@simhdfc",
+   "amount": 6000,
+   "note": "advance",
+   "why": "ordinary word, new ID",
+   "action": "ALLOW",
+   "score": 20
+  },
+  {
+   "truth": "scam",
+   "payee": "pooja.m2231@simaxis",
+   "amount": 2000,
+   "note": "",
+   "why": "no words at all: a small plain payment",
+   "action": "ALLOW",
+   "score": 11
+  }
+ ],
+ "false_alarms": [
+  {
+   "truth": "safe",
+   "payee": "school.fees.office@simsbi",
+   "amount": 12500,
+   "note": "school fee term 2",
+   "why": "large genuine fee",
+   "action": "WARN",
+   "score": 43
+  }
+ ],
+ "rows": [
+  {
+   "truth": "scam",
+   "payee": "olx.buyer.help@simybl",
+   "amount": 12000,
+   "note": "scan to receive",
+   "why": "scan to receive",
+   "action": "HOLD",
+   "score": 79
+  },
+  {
+   "truth": "scam",
+   "payee": "olx.payment.team@simybl",
+   "amount": 8500,
+   "note": "scan and enter pin to get money",
+   "why": "scan to receive",
+   "action": "HOLD",
+   "score": 78
+  },
+  {
+   "truth": "scam",
+   "payee": "army.officer.rent@simybl",
+   "amount": 15000,
+   "note": "advance refund scan to receive",
+   "why": "scan to receive",
+   "action": "HOLD",
+   "score": 79
+  },
+  {
+   "truth": "scam",
+   "payee": "buyer.quikr22@simaxis",
+   "amount": 4999,
+   "note": "receive payment from buyer",
+   "why": "scan to receive",
+   "action": "ALLOW",
+   "score": 20
+  },
+  {
+   "truth": "scam",
+   "payee": "refund-sbi@simybl",
+   "amount": 2999,
+   "note": "refund of rs 2999 approve to receive",
+   "why": "fake refund",
+   "action": "BLOCK",
+   "score": 85
+  },
+  {
+   "truth": "scam",
+   "payee": "hdfc.refund.desk@simybl",
+   "amount": 1999,
+   "note": "refund processing",
+   "why": "fake refund",
+   "action": "HOLD",
+   "score": 67
+  },
+  {
+   "truth": "scam",
+   "payee": "amazon-refund-help@simybl",
+   "amount": 2499,
+   "note": "order refund",
+   "why": "fake refund",
+   "action": "HOLD",
+   "score": 67
+  },
+  {
+   "truth": "scam",
+   "payee": "sbi.kyc.update@simybl",
+   "amount": 499,
+   "note": "KYC fee",
+   "why": "fake KYC",
+   "action": "HOLD",
+   "score": 66
+  },
+  {
+   "truth": "scam",
+   "payee": "paytm-kyc-verify@simybl",
+   "amount": 99,
+   "note": "kyc verification",
+   "why": "fake KYC",
+   "action": "WARN",
+   "score": 66
+  },
+  {
+   "truth": "scam",
+   "payee": "rbi.safe.account@simpnb",
+   "amount": 80000,
+   "note": "RBI safe account",
+   "why": "digital arrest",
+   "action": "WARN",
+   "score": 52
+  },
+  {
+   "truth": "scam",
+   "payee": "cbi.case.clearance@simpnb",
+   "amount": 150000,
+   "note": "case clearance fee",
+   "why": "digital arrest",
+   "action": "WARN",
+   "score": 53
+  },
+  {
+   "truth": "scam",
+   "payee": "kbc.lucky.draw@simybl",
+   "amount": 5000,
+   "note": "lottery processing fee",
+   "why": "prize",
+   "action": "ALLOW",
+   "score": 28
+  },
+  {
+   "truth": "scam",
+   "payee": "prize.claim.office@simaxis",
+   "amount": 2500,
+   "note": "claim your prize",
+   "why": "prize",
+   "action": "ALLOW",
+   "score": 26
+  },
+  {
+   "truth": "scam",
+   "payee": "job.placement.hr@simybl",
+   "amount": 25000,
+   "note": "joining fee",
+   "why": "job fee",
+   "action": "WARN",
+   "score": 49
+  },
+  {
+   "truth": "scam",
+   "payee": "workfromhome.task@simybl",
+   "amount": 3000,
+   "note": "task deposit",
+   "why": "job fee",
+   "action": "ALLOW",
+   "score": 35
+  },
+  {
+   "truth": "scam",
+   "payee": "electricity.bill.cut@simybl",
+   "amount": 1500,
+   "note": "pay now or power cut tonight",
+   "why": "bill threat",
+   "action": "ALLOW",
+   "score": 34
+  },
+  {
+   "truth": "scam",
+   "payee": "rohit.k9913@simybl",
+   "amount": 45000,
+   "note": "",
+   "why": "no words at all: a plain large payment to a new ID",
+   "action": "WARN",
+   "score": 48
+  },
+  {
+   "truth": "scam",
+   "payee": "neha.s4410@simicici",
+   "amount": 18000,
+   "note": "",
+   "why": "no words at all: a plain large payment to a new ID",
+   "action": "WARN",
+   "score": 45
+  },
+  {
+   "truth": "scam",
+   "payee": "vikas.t7702@simhdfc",
+   "amount": 6000,
+   "note": "advance",
+   "why": "ordinary word, new ID",
+   "action": "ALLOW",
+   "score": 20
+  },
+  {
+   "truth": "scam",
+   "payee": "pooja.m2231@simaxis",
+   "amount": 2000,
+   "note": "",
+   "why": "no words at all: a small plain payment",
+   "action": "ALLOW",
+   "score": 11
+  },
+  {
+   "truth": "safe",
+   "payee": "ramesh.kirana@simaxis",
+   "amount": 180,
+   "note": "",
+   "why": "local shop",
+   "action": "ALLOW",
+   "score": 0
+  },
+  {
+   "truth": "safe",
+   "payee": "ramesh.kirana@simaxis",
+   "amount": 450,
+   "note": "groceries",
+   "why": "local shop",
+   "action": "ALLOW",
+   "score": 0
+  },
+  {
+   "truth": "safe",
+   "payee": "sharma.medical@simsbi",
+   "amount": 320,
+   "note": "medicines",
+   "why": "pharmacy",
+   "action": "ALLOW",
+   "score": 3
+  },
+  {
+   "truth": "safe",
+   "payee": "chai.corner@simybl",
+   "amount": 40,
+   "note": "",
+   "why": "small tea stall",
+   "action": "ALLOW",
+   "score": 2
+  },
+  {
+   "truth": "safe",
+   "payee": "auto.driver.raju@simpaytm",
+   "amount": 90,
+   "note": "",
+   "why": "auto fare",
+   "action": "ALLOW",
+   "score": 2
+  },
+  {
+   "truth": "safe",
+   "payee": "milk.dairy.gupta@simsbi",
+   "amount": 600,
+   "note": "milk oct",
+   "why": "monthly bill",
+   "action": "ALLOW",
+   "score": 6
+  },
+  {
+   "truth": "safe",
+   "payee": "newspaper.vendor@simybl",
+   "amount": 250,
+   "note": "paper bill",
+   "why": "monthly bill",
+   "action": "ALLOW",
+   "score": 3
+  },
+  {
+   "truth": "safe",
+   "payee": "tiffin.service.anu@simhdfc",
+   "amount": 2800,
+   "note": "tiffin october",
+   "why": "monthly bill",
+   "action": "ALLOW",
+   "score": 17
+  },
+  {
+   "truth": "safe",
+   "payee": "electricity.board@simsbi",
+   "amount": 1340,
+   "note": "electricity bill oct",
+   "why": "genuine bill word",
+   "action": "ALLOW",
+   "score": 26
+  },
+  {
+   "truth": "safe",
+   "payee": "school.fees.office@simsbi",
+   "amount": 12500,
+   "note": "school fee term 2",
+   "why": "large genuine fee",
+   "action": "WARN",
+   "score": 43
+  },
+  {
+   "truth": "safe",
+   "payee": "dr.mehta.clinic@simicici",
+   "amount": 800,
+   "note": "consultation",
+   "why": "doctor",
+   "action": "ALLOW",
+   "score": 8
+  },
+  {
+   "truth": "safe",
+   "payee": "arjun.friend@simybl",
+   "amount": 500,
+   "note": "dinner split",
+   "why": "friend",
+   "action": "ALLOW",
+   "score": 4
+  },
+  {
+   "truth": "safe",
+   "payee": "priya.cousin@simaxis",
+   "amount": 1500,
+   "note": "gift",
+   "why": "family",
+   "action": "ALLOW",
+   "score": 10
+  },
+  {
+   "truth": "safe",
+   "payee": "landlord.verma@simhdfc",
+   "amount": 9000,
+   "note": "rent october",
+   "why": "large regular payment",
+   "action": "ALLOW",
+   "score": 31
+  },
+  {
+   "truth": "safe",
+   "payee": "gym.fitzone@simaxis",
+   "amount": 1200,
+   "note": "membership",
+   "why": "shop",
+   "action": "ALLOW",
+   "score": 12
+  },
+  {
+   "truth": "safe",
+   "payee": "salon.style@simybl",
+   "amount": 350,
+   "note": "haircut",
+   "why": "shop",
+   "action": "ALLOW",
+   "score": 3
+  },
+  {
+   "truth": "safe",
+   "payee": "petrol.pump.hp@simsbi",
+   "amount": 1000,
+   "note": "",
+   "why": "fuel",
+   "action": "ALLOW",
+   "score": 18
+  },
+  {
+   "truth": "safe",
+   "payee": "kirana.new.shop@simybl",
+   "amount": 75,
+   "note": "",
+   "why": "new small shop",
+   "action": "ALLOW",
+   "score": 2
+  },
+  {
+   "truth": "safe",
+   "payee": "temple.donation@simsbi",
+   "amount": 501,
+   "note": "donation",
+   "why": "donation",
+   "action": "ALLOW",
+   "score": 4
+  },
+  {
+   "truth": "safe",
+   "payee": "refund.friend.rahul@simybl",
+   "amount": 300,
+   "note": "paying back",
+   "why": "genuine word 'refund' in an ID",
+   "action": "ALLOW",
+   "score": 3
+  }
+ ]
+}

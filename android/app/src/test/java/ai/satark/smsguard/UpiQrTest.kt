@@ -8,6 +8,24 @@ import org.junit.Test
 class UpiQrTest {
     private fun upi(raw: String) = UpiQr.parse(raw) as Scanned.Upi
 
+    @Test fun aPaymentLinkCanBeReadBackExactly() {
+        val q = upi(UpiQr.paymentLink("shop.one@ybl", "Ramesh & Sons", 1.0, "tea + snacks"))
+        assertEquals("shop.one@ybl", q.payee)
+        assertEquals("Ramesh & Sons", q.name)
+        assertEquals(1.0, q.amount!!, 0.001)
+        assertEquals("tea + snacks", q.note)
+    }
+
+    @Test fun aPaymentLinkAlwaysUsesADotForTheAmount() {
+        assertTrue(UpiQr.paymentLink("a@ybl", null, 1234.5, null).contains("am=1234.50&cu=INR"))
+    }
+
+    @Test fun aTypedLinkIsNormalisedOrRefused() {
+        assertEquals("http://sbi-kyc.xyz/a", UpiQr.normaliseLink(" sbi-kyc.xyz/a "))
+        assertEquals("https://a.in", UpiQr.normaliseLink("https://a.in"))
+        for (bad in listOf("", "hello", "two words.com", "javascript://x.y", "tel://1.2")) assertNull(bad, UpiQr.normaliseLink(bad))
+    }
+
     @Test fun readsAFullPaymentQr() {
         val q = upi("upi://pay?pa=ramesh.kirana@simaxis&pn=Ramesh%20Kirana&am=180.00&tn=milk&cu=INR")
         assertEquals("ramesh.kirana@simaxis", q.payee)

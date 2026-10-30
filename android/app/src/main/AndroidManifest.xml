@@ -10,6 +10,14 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!-- usesCleartextTraffic: the laptop is reached over the local Wi-Fi with plain http. -->
+    <!-- Lets the app hand a checked payment to the person's own UPI app. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="upi" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"

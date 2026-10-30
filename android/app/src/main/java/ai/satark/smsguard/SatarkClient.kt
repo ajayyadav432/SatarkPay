@@ -21,6 +21,16 @@ object SatarkClient {
         return request("$server/api/v1/auth/login", "POST", null, body.toString())
     }
 
+    /** Creates a user or merchant account. Returns the same as login. */
+    fun signUp(server: String, role: String, username: String, password: String, name: String): JSONObject {
+        val body = JSONObject().put("role", role).put("username", username).put("password", password).put("name", name)
+        return request("$server/api/v1/auth/signup", "POST", null, body.toString())
+    }
+
+    /** One tap into a portal's shared demo account, for judges. */
+    fun testLogin(server: String, role: String): JSONObject =
+        request("$server/api/v1/auth/test-login", "POST", null, JSONObject().put("role", role).toString())
+
     fun logout(server: String) { request("$server/api/v1/auth/logout", "POST", null, "{}") }
 
     /** Still logged in? Throws LoginNeeded if not. */

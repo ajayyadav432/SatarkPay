@@ -48,14 +48,12 @@ class PayFlowTest {
         SatarkPayTheme { Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) { content() } }
     }
 
-    // The laptop's demo passwords are never in the repo: am instrument -e userPassword ... -e merchantPassword ... -e adminPassword ...
-    private val args = InstrumentationRegistry.getArguments()
-    @org.junit.Before fun logIn() { logInAs("user", "sunita", "userPassword") }
+    @org.junit.Before fun logIn() { logInAs("user") }
     @org.junit.After fun endLogin() { SatarkClient.token = null }
 
-    private fun logInAs(role: String, username: String, arg: String) {
+    private fun logInAs(role: String) {
         SatarkClient.token = null
-        SatarkClient.token = SatarkClient.login(store.serverUrl, role, username, args.getString(arg)!!).getString("token")
+        SatarkClient.token = SatarkClient.testLogin(store.serverUrl, role).getString("token")
     }
 
     private fun readAsset(name: String): String? {
@@ -104,6 +102,7 @@ class PayFlowTest {
         rule.onNodeWithText("On hold", substring = true).assertExists()
         rule.onNodeWithText("Report this scam").performScrollTo().assertExists()
         rule.onAllNodesWithText("Simulate payment").assertCountEquals(0)
+        rule.onAllNodesWithText("Open payment app", substring = true).assertCountEquals(0)
         rule.onNodeWithText("Pay anyway (wait", substring = true).performScrollTo().assertIsNotEnabled()
         screenshot("result_scam")
         rule.onNodeWithText("हिंदी").performClick()
@@ -126,6 +125,7 @@ class PayFlowTest {
         rule.onNodeWithText("This is a real UPI ID", substring = true).performScrollTo().assertExists()
         rule.onAllNodesWithText("Simulate payment").assertCountEquals(0)
         rule.onAllNodesWithText("1 day old", substring = true).assertCountEquals(0)
+        rule.onNodeWithText("Open payment app", substring = true).performScrollTo().assertExists()
         screenshot("result_real")
     }
 
@@ -152,7 +152,7 @@ class PayFlowTest {
     }
 
     @Test fun aMerchantSeesItsOwnPaymentsAndNotTheAdminData() {
-        logInAs("merchant", "ramesh", "merchantPassword")
+        logInAs("merchant")
         var refused = false
         try { SatarkClient.kpis(store.serverUrl) } catch (e: IllegalStateException) { refused = e.message!!.contains("cannot do that") }
         assertTrue("a merchant must not read admin numbers", refused)
@@ -164,12 +164,42 @@ class PayFlowTest {
     }
 
     @Test fun anAdminSeesTheNumbersAndCanLaunchAnAttack() {
-        logInAs("admin", "admin", "adminPassword")
+        logInAs("admin")
         rule.setContent { Themed { AdminHome(store, {}, {}) } }
         rule.waitUntil(10000) { rule.onAllNodes(hasText("Scored")).fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("Mule ring").performScrollTo().performClick()
         rule.waitUntil(30000) { rule.onAllNodes(hasText("Confirm scam")).fetchSemanticsNodes().isNotEmpty() }
         screenshot("admin")
+    }
+
+    @Test fun aPastedScamMessageIsFlagged() {
+        rule.setContent { Themed { MessageScreen(store) {} } }
+        rule.onNodeWithText("Message").performTextInput("Dear customer, your SBI account will be blocked today. Update your KYC immediately: http://sbi-kyc-update.xyz/login")
+        rule.onNodeWithText("Check this message").performClick()
+        rule.waitUntil(15000) { rule.onAllNodes(hasText("Do not reply", substring = true)).fetchSemanticsNodes().isNotEmpty() }
+        screenshot("message")
+    }
+
+    @Test fun aSignUpWorksAndGivesAUsersRights() {
+        SatarkClient.token = null
+        val name = "phone" + System.currentTimeMillis()
+        val me = SatarkClient.signUp(store.serverUrl, "user", name, "long-enough-pass", "Phone Tester")
+        assertEquals("user", me.getString("role"))
+        SatarkClient.token = me.getString("token")
+        assertEquals("Phone Tester", SatarkClient.me(store.serverUrl).getString("name"))
+    }
+
+    @Test fun nobodyCanSignUpAsAdmin() {
+        var message = ""
+        try { SatarkClient.signUp(store.serverUrl, "admin", "phone.admin", "long-enough-pass", "Nope") } catch (e: IllegalStateException) { message = e.message!! }
+        assertTrue(message, message.contains("cannot be created"))
+    }
+
+    @Test fun eachPortalHasATestLogin() {
+        for ((role, label) in listOf("user" to "User", "merchant" to "Merchant", "admin" to "Admin")) {
+            SatarkClient.token = null
+            assertEquals(role, SatarkClient.testLogin(store.serverUrl, role).getString("role"))
+        }
     }
 
     @Test fun aUserCannotReadAdminNumbers() {
