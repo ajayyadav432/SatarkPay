@@ -100,11 +100,11 @@ class PayFlowTest {
     @Test fun aScamQrIsHeldAndCannotBePaidStraightAway() {
         scanAndCheck("satarkpay_qr_scam.png")
         rule.onNodeWithText("On hold", substring = true).assertExists()
+        screenshot("result_scam")
         rule.onNodeWithText("Report this scam").performScrollTo().assertExists()
         rule.onAllNodesWithText("Simulate payment").assertCountEquals(0)
         rule.onAllNodesWithText("Open payment app", substring = true).assertCountEquals(0)
         rule.onNodeWithText("Pay anyway (wait", substring = true).performScrollTo().assertIsNotEnabled()
-        screenshot("result_scam")
         rule.onNodeWithText("हिंदी").performClick()
         rule.onNodeWithText("रोक", substring = true).assertExists()
         screenshot("result_scam_hindi")

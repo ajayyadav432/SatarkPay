@@ -21,7 +21,7 @@ if ! .venv/bin/python -c "import fastapi, sklearn, xgboost, tldextract, uvicorn,
     rm -rf .venv
     python3 -m venv .venv
   fi
-  .venv/bin/python -m pip install --quiet --disable-pip-version-check -r requirements.txt
+  .venv/bin/python -m pip install --quiet --disable-pip-version-check -r requirements.txt -r requirements-dev.txt
 fi
 PY=.venv/bin/python
 HOST="${SATARK_HOST:-127.0.0.1}"

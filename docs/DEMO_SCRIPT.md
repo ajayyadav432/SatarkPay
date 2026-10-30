@@ -11,7 +11,9 @@ Live numbers change with every run, so read them off the screen. Do not memorise
 - [ ] Phone on the same Wi-Fi or hotspot, at `http://<laptop-ip>:8000/pay`, showing Sunita ji, in Hindi if the room would like that.
 - [ ] A second tab on the laptop at `/how`.
 - [ ] Restart the server just before going up, so the numbers on screen start from zero.
-- [ ] Log in: admin on the laptop, user on the phone. `./run.sh accounts` makes new passwords if they are lost.
+- [ ] Log in with the test login buttons: Admin on the laptop, User on the phone.
+- [ ] Practise this script 3 times, with a timer, including one run where you use the backups below.
+- [ ] Scan a test QR with the live camera today, so you know it works in that room's light.
 - [ ] Optional: the SatarkPay app on an Android phone, with `http://localhost:8000/qr` open on the laptop. Scan "Scan to receive" to show a scam stopped live.
 - [ ] Optional: the same app, paired, with SMS allowed, and a teammate ready to send a scam SMS.
 
@@ -57,7 +59,11 @@ Live numbers change with every run, so read them off the screen. Do not memorise
 | Nothing moves on the dashboard | Check it says *Live*. Press **Start**. Check speed is 25 per second |
 | A judge finds a miss | Good. "That is a real limit." Note it. Never argue |
 | The laptop dies | Second laptop, set up beforehand. Otherwise the deck has screenshots of the same story |
-| No internet | Nothing in the demo needs it |
+| No internet | The laptop demo does not need it. Only the Vercel copy does |
+| The camera will not read the QR | Use **From photo** with a screenshot of the QR saved on the phone beforehand. Save one now |
+| The phone app cannot reach the laptop | Run `adb reverse tcp:8000 tcp:8000`, or use the app's address `https://satarkpay.vercel.app` under *Laptop connection* |
+| The laptop's server fails | Open `https://satarkpay.vercel.app` and use the test logins. Say that it is the test copy, whose numbers can reset |
+| Screen timeout during the demo | Set the phone's screen to stay on before going up |
 | An attack is too quiet | Launch it again. Each launch is a new set of accounts |
 
 ## Things never to say

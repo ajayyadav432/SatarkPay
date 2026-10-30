@@ -20,7 +20,12 @@ BUNDLE_FILE = PAY_MODELS_DIR / "bundle.json"   # feature order, thresholds, norm
 METRICS_FILE = PAY_MODELS_DIR / "metrics.json"
 
 # Tests point this at a temporary file so they never touch real alerts.
-DB_PATH = Path(os.environ.get("SATARKPAY_DB", DATA_DIR / "alerts.db"))
+# On Vercel only /tmp can be written and instances come and go, so accounts and alerts there do not last, and the world is small.
+ON_VERCEL = bool(os.environ.get("VERCEL"))
+if ON_VERCEL:
+    os.environ.setdefault("SATARKPAY_LIVE_USERS", "800")
+    os.environ.setdefault("TLDEXTRACT_CACHE", "/tmp/tldextract")
+DB_PATH = Path(os.environ.get("SATARKPAY_DB", "/tmp/satarkpay.db" if ON_VERCEL else DATA_DIR / "alerts.db"))
 
 HOST = os.environ.get("SATARK_HOST", "127.0.0.1")
 PORT = int(os.environ.get("SATARK_PORT", "8000"))

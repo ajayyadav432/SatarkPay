@@ -7,7 +7,7 @@ SPHINX'26, MNIT Jaipur. Problem statement 3.2: *Real-Time Fraud Detection for UP
 
 Every payment is scored before it goes through. It gets a risk score from 0 to 100, a decision (Allow, Warn, Hold or Block) and the reasons
 in plain English and Hindi. There is a live dashboard for analysts, an alert screen for the person paying, a view for small merchants and one API call for apps.
-It runs offline on one laptop.
+It runs offline on one laptop, and there is a public test copy at **https://satarkpay.vercel.app**.
 
 > **Everything here is simulated.** No real money, real accounts or real UPI connection. All UPI IDs end in `@sim...`, so that a simulated "mule" can never match a real person.
 > The results are on synthetic data. **How it would do on real payments is unknown.**
@@ -22,17 +22,30 @@ It runs offline on one laptop.
 | Abhimanyu2211 | [@Abhimanyu2211](https://github.com/Abhimanyu2211) |
 | SaloniTrivedi11 | [@SaloniTrivedi11](https://github.com/SaloniTrivedi11) |
 
-## Logins
+## Try it
 
-There are three kinds of account, on the website and in the phone app. The server enforces what each can do.
+Open **https://satarkpay.vercel.app** and press a test login. No password is needed, and everything is simulated.
 
-| Login | Username | Can use |
+| Portal | Test login opens | Can use |
 |---|---|---|
-| User | `sunita` | Check and make simulated payments |
-| Merchant | `ramesh` | Its own shop's payments |
-| Admin | `admin` | Dashboard, alerts, attacks, and the other two screens |
+| User | `/pay` | Check and make simulated payments |
+| Merchant | `/merchant` | Its own shop's payments |
+| Admin | `/` | Dashboard, alerts, attacks, and the other two screens |
 
-`./run.sh` creates the passwords the first time and prints them once. `./run.sh accounts` makes new ones. Only salted hashes are stored, in `.env`, which is never committed. The model card, test QR codes and warning page stay public.
+You can also sign up as a user or a merchant. Admin accounts cannot be created. The server checks every request, so a user who calls an admin API is refused. For a real deployment, turn test logins off with `SATARKPAY_TEST_LOGINS=0`.
+
+**The Vercel copy is for trying it, not for the full demo.** Vercel functions restart and can run as several copies, so sign-ups, alerts and live numbers there can reset or differ between requests. The full demo runs on a laptop with `./run.sh`.
+
+On a laptop, `./run.sh` creates passwords for the demo accounts (`sunita`, `ramesh`, `admin`) the first time and prints them once. `./run.sh accounts` makes new ones. Only salted hashes are stored, in `.env`, which is never committed.
+
+## The phone app
+
+Built with `cd android && ./gradlew assembleDebug`. Log in, or use a test login, then:
+
+- **Scan UPI QR**, from the camera, a screenshot or a shared picture. It shows what the QR says, then the decision and reasons in English and Hindi.
+- **Open payment app** hands a checked payment on a real UPI ID to GPay, PhonePe, Paytm or any UPI app. The person approves it there with their PIN, and SatarkPay never sees it. A blocked payment is not handed over. A warned or held one waits first.
+- **Check message** and **Check link** check something pasted in.
+- **SMS protection** checks incoming SMS, with the person's permission. Messages go only to the team's laptop, and never to an `https` server such as the Vercel copy.
 
 ## Run it
 
@@ -158,8 +171,22 @@ On scams it has seen, XGBoost alone does slightly better than the full system. T
 - **Kafka is not built.** The problem statement allows a stream simulator, and a stream simulator keeps the demo on one laptop with nothing else to install. The `Bus` class is where Kafka would go. That has not been tested.
 - **Logins are demo accounts.** There is one account per role, no sign-up, and logins end when the server restarts. It runs over plain http on one local network. A real deployment needs real accounts, https and rate limits on the API.
 - **SMS privacy.** In this demo the laptop reads the SMS. The production design scores it on the phone and sends only the score.
-- **The Android app has been run on one real phone (Samsung SM-E366B, Android 17) over USB.** Connection and its built-in sample SMS worked against this server. QR pictures, the check and the result screens were tested on that phone (`android/app/src/androidTest`). The camera was shown to open, but reading a QR through the lens and a real incoming SMS have not been tested. The extension was run in Chromium against this server.
+- **The Android app has been run on one real phone (Samsung SM-E366B, Android 17).** QR pictures, the check, logins and the result screens were tested on it (`android/app/src/androidTest`). The camera was shown to open. Reading a QR through the lens, a real incoming SMS and a real payment through a UPI app have not been confirmed. UPI apps may also refuse a request from another app, whatever we send.
+- **Sign-ups use a shared simulated wallet.** A new user pays as a demo person and a new merchant sees the demo shop, because real accounts are not connected.
 - **The "this looks like" label is a best guess.** It named the right scam for 80% of flagged scams in the test. The reasons are exact. The label is not.
+
+## QR accuracy
+
+The results above do not cover QR scans, so QR contents are measured on their own (`python -m ml.qr_eval`, results in `models/qr_metrics.json`). The set is 20 scam and 20 safe QR contents written by hand and fixed before the first run. Nothing was tuned on it.
+
+| | Result |
+|---|---|
+| Scam QRs flagged | 13 of 20 |
+| Scam QRs stopped (Hold or Block) | 7 of 20 |
+| Safe QRs flagged | 1 of 20 |
+| Safe QRs stopped | 0 of 20 |
+
+This is small, it is hand-written, and it tests what a QR says, not reading one through a camera. It is weaker than the main results. Misses include prize and lottery notes, a threat about a power cut, and plain payments with no words at all.
 
 ## Reused code
 

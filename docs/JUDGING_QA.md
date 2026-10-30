@@ -108,6 +108,12 @@ Where the words give it away, the other layers save it. Where only behaviour doe
 
 **Does the phone app scan real UPI QR codes?** Yes, it reads the QR on the phone and checks the payment on the laptop. It does not pay. A real UPI ID has no history here, so only the ID, the amount and the note are checked, and the app tells the person that this is not a guarantee.
 
+**How good is it on QR codes?** Weaker than the headline numbers, and we measured that separately. On a hand-written set, it flagged 13 of 20 scam QRs and stopped 7, and flagged 1 of 20 safe ones. It misses prize and lottery wording and plain payments with no words. Do not quote the main numbers for QR scans.
+
+**Does it pay real money?** It never moves money itself. For a real UPI ID it can open the person's own UPI app, and they approve with their PIN there. Say whether you have tested this: UPI apps can refuse requests from other apps.
+
+**Why is the test login open to anyone?** So judges can try each portal in one click. It only reaches simulated data, and one setting turns it off.
+
 **Who can see what?** Three logins: user, merchant and admin. The server checks every request, so a user who calls the admin API directly gets refused. They are demo accounts: one for each role, with hashed passwords.
 
 **Why no Kafka?** The PS allows a simple stream simulator, and a stream simulator keeps the demo on one laptop with nothing else to install. A small `Bus` class is where Kafka would go. That has not been tested, and we do not claim it.

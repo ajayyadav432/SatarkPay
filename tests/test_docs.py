@@ -43,3 +43,10 @@ def test_documents_never_quote_accuracy_as_a_result(doc):
     for line in doc.splitlines():
         if "accura" in line.lower():
             assert any(w in line.lower() for w in ("never report", "wrong number", "never flags", "99.999", "do not report", "unknown", "said", "99% accurate", "real-world", "real payments")), line
+
+
+def test_the_qr_numbers_in_the_documents_are_the_measured_ones():
+    q = json.loads((ROOT / "models" / "qr_metrics.json").read_text(encoding="utf-8"))
+    for text in (README, QA):
+        assert f"{q['scams_flagged']} of {q['scams']}" in text and f"{q['safe_flagged']} of {q['safe']}" in text
+

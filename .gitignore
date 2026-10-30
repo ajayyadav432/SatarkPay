@@ -9,3 +9,5 @@ __pycache__/
 android/app/build/
 android/.gradle/
 android/local.properties
+.vercel/
+.vercel

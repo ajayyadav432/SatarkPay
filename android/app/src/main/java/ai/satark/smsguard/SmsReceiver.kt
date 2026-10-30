@@ -18,6 +18,8 @@ class SmsReceiver : BroadcastReceiver() {
         val bySender = parts.filterNotNull().groupBy { it.displayOriginatingAddress ?: "unknown" }
         val pending = goAsync()   // keep the receiver alive while the network call runs
         val store = Store(context)
+        // Real messages hold OTPs and bank details. They are only ever sent to the team's own laptop, never to a public server.
+        if (store.serverUrl.startsWith("https://")) { pending.finish(); return }
         Thread {
             try {
                 for ((sender, msgs) in bySender) {

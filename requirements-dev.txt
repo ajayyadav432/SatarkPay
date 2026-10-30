@@ -1,3 +1,7 @@
+# For training and tests. The running app, and Vercel, need only requirements.txt.
+pandas==3.0.6
+pyarrow==26.0.0
+pytest==9.1.1
 # Only needed for the browser tests (tests/test_e2e.py) and the check against the official SHAP library.
 playwright==1.64.0
 shap==0.53.0

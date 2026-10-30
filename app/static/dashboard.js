@@ -34,7 +34,7 @@
     $("hero-figure").textContent = rupees(k.rupees.stopped);
     $("tiles").replaceChildren(
       tile("Payments scored", count(k.scored), `${k.tps} per second`),
-      tile("Time to score", k.latency_ms.p95 !== null ? `${k.latency_ms.p95} ms` : "...", "p95, this laptop"),
+      tile("Time to score", k.latency_ms.p95 !== null ? `${k.latency_ms.p95} ms` : "...", "p95, on this server"),
       tile("Alerts raised", count(k.alerts), `${count(k.stopped)} stopped`),
       tile("Still recoverable", rupees(k.rupees.recoverable), "held at the mule's next hop"),
       tile("Lost anyway", rupees(k.rupees.lost), "scams that went through"));

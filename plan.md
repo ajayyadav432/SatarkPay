@@ -478,3 +478,4 @@ Every finding that changes the design goes here, with its evidence.
   High 78), and its copied tests skip silently. A new test fails loudly in that case, and training refuses to start.
 - **30 Oct 2026.** The reused Android app could not scan or check a UPI payment, which is the point of the problem statement. Added QR scanning with CameraX and ML Kit. Seven reused files changed and left the manifest. A real UPI ID has no history here, so the app hides model reasons for it and never says it is safe.
 - **30 Oct 2026.** Added user, merchant and admin logins, enforced by the server for the website and the phone app. This replaces the old rule that only the laptop could run the show, and closes the scoring API that had no login.
+- **31 Oct 2026.** Added sign-up, test logins, the payment app button and message and link checks, and deployed a test copy to Vercel. QR contents measured on their own: 13/20 scams flagged, 1/20 safe flagged. Not tuned on that set.
