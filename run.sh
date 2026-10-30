@@ -2,6 +2,7 @@
 # SatarkPay - one command to run, test or retrain.
 #   ./run.sh            start the app on http://localhost:8000
 #   ./run.sh wifi       start so that phones on the same Wi-Fi or hotspot can join (prints the address and pairing code)
+#   ./run.sh demo       serve the test pages with fake scam links for the browser extension
 #   ./run.sh accounts   make new passwords for the user, merchant and admin logins
 #   ./run.sh test       run all tests
 #   ./run.sh train      rebuild the simulated world and retrain both models (about 2 minutes)
@@ -50,6 +51,11 @@ case "${1:-serve}" in
     echo "Pairing code for the SMS Guard app: $(grep "^SATARK_TOKEN=" .env | cut -d= -f2-)"
     SATARK_HOST=0.0.0.0 exec "$PY" -m uvicorn app.main:app --host 0.0.0.0 --port "$PORT"
     ;;
+  demo)
+    # Test pages with fake scam links for the Link Guard extension. Keep ./run.sh running too.
+    echo "Demo pages: http://127.0.0.1:8765/  (Ctrl+C to stop)"
+    exec "$PY" -m http.server 8765 --bind 127.0.0.1 --directory demo
+    ;;
   test)
     shift
     exec "$PY" -m pytest "$@"
@@ -81,7 +87,7 @@ case "${1:-serve}" in
     done
     ;;
   *)
-    echo "Usage: ./run.sh [serve|wifi|accounts|test|train|evaluate|paysim|loadtest|phone]"
+    echo "Usage: ./run.sh [serve|wifi|demo|accounts|test|train|evaluate|paysim|loadtest|phone]"
     exit 2
     ;;
 esac

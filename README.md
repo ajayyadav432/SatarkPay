@@ -48,6 +48,8 @@ Built with `cd android && ./gradlew assembleDebug`. Log in, or use a test login,
 - **Check message** and **Check link** check something pasted in.
 - **SMS protection** checks incoming SMS, with the person's permission. Messages go only to the team's laptop, and never to an `https` server such as the Vercel copy.
 
+New to the project? Read the [Project Guide](docs/SatarkPay_Project_Guide.pdf). To test it, use the [Testing Guide](docs/SatarkPay_Testing_Guide.pdf).
+
 ## Run it
 
 ```bash

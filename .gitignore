@@ -4,6 +4,7 @@ __pycache__/
 .pytest_cache/
 *.log
 *.pdf
+!docs/*.pdf
 .env
 /data/
 android/app/build/
