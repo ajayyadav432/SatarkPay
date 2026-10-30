@@ -175,7 +175,7 @@ On scams it has seen, XGBoost alone does slightly better than the full system. T
 - **Sign-ups use a shared simulated wallet.** A new user pays as a demo person and a new merchant sees the demo shop, because real accounts are not connected.
 - **The "this looks like" label is a best guess.** It named the right scam for 80% of flagged scams in the test. The reasons are exact. The label is not.
 
-## QR accuracy
+## QR results
 
 The results above do not cover QR scans, so QR contents are measured on their own (`python -m ml.qr_eval`, results in `models/qr_metrics.json`). The set is 20 scam and 20 safe QR contents written by hand and fixed before the first run. Nothing was tuned on it.
 
