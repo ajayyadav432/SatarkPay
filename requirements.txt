@@ -1,0 +1,14 @@
+# Installed and tested on 30 Oct 2026 (Python 3.13). The scikit-learn pin must stay: the reused SatarkAI models were saved with it.
+fastapi==0.143.0
+uvicorn[standard]==0.54.0
+scikit-learn==1.9.1
+numpy==2.5.4
+scipy==1.18.1
+joblib==1.6.0
+tldextract==5.4.0
+pandas==3.0.6
+pyarrow==26.0.0
+xgboost-cpu==3.4.1
+segno==1.6.6
+pytest==9.1.1
+httpx==0.28.1

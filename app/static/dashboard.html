@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>SatarkPay Dashboard</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/theme.js"></script>
+</head>
+<body>
+  <div id="top"></div>
+  <main class="wrap">
+    <section class="hero" aria-label="Headline numbers">
+      <div>
+        <div class="hero-label">Scam money stopped before it moved</div>
+        <div class="hero-figure" id="hero-figure">₹0</div>
+        <div class="hero-tag">Stops a scam payment before the money is gone, and says why.</div>
+        <span class="hero-sim">Simulated UPI world. No real money or real accounts.</span>
+      </div>
+      <div class="tiles" id="tiles"></div>
+    </section>
+
+    <section class="card" aria-label="Controls and attacks">
+      <div class="card-head">
+        <h2>Launch an attack and watch it get caught</h2>
+        <div class="controls">
+          <span class="live-dot" id="live-dot" aria-hidden="true"></span>
+          <span class="small" id="live-label">Connecting...</span>
+          <button class="btn btn-small" id="btn-run" type="button">Pause</button>
+          <label class="small muted" for="speed">Speed</label>
+          <select class="select" id="speed" aria-label="Payments per second"></select>
+        </div>
+      </div>
+      <div class="attacks" id="attacks"></div>
+    </section>
+
+    <div class="grid-2">
+      <div class="stack">
+        <section class="card" aria-label="Live payments">
+          <div class="card-head"><h2>Live payments</h2><span class="small muted" id="feed-note">Every payment is scored before it goes through</span></div>
+          <div class="table-wrap">
+            <table class="feed-table">
+              <thead><tr><th>Time</th><th>From</th><th>To</th><th class="right">Amount</th><th>How</th><th class="right">Score</th><th>Decision</th></tr></thead>
+              <tbody id="feed"></tbody>
+            </table>
+          </div>
+        </section>
+        <section class="card" aria-label="Money network">
+          <div class="card-head"><h2>Where the money went</h2><span class="small muted" id="graph-note">Built only from payments the system saw</span></div>
+          <div class="legend">
+            <span class="legend-item"><span class="line-key bg-axis"></span>Money moved</span>
+            <span class="legend-item"><span class="line-key bg-block"></span>Held or blocked, still recoverable</span>
+          </div>
+          <div id="graph"><p class="graph-empty">Launch the mule ring to see the network form.</p></div>
+        </section>
+      </div>
+      <div class="stack">
+        <section class="card" aria-label="Alerts">
+          <div class="card-head"><h2>Alerts</h2><button class="btn btn-small hidden" id="btn-follow" type="button">Follow the latest</button></div>
+          <div class="alert-list" id="alert-list"><p class="muted small">Nothing yet. Launch an attack above.</p></div>
+        </section>
+        <section class="card hidden" id="detail" aria-label="Why this alert" aria-live="polite"></section>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <section class="card" aria-label="Flagged payments over time">
+        <div class="card-head"><h2>Flagged payments</h2><span class="small muted">Last 60 seconds</span></div>
+        <div class="legend" id="time-legend"></div>
+        <div id="time-chart"></div>
+        <p class="small muted">Allowed payments are left out, or they would hide everything else.</p>
+        <details class="table-view"><summary>Show as a table</summary><div class="table-wrap" id="time-table"></div></details>
+      </section>
+      <section class="card" aria-label="Alerts by scam type">
+        <div class="card-head"><h2>Alerts by likely scam</h2></div>
+        <div class="bars" id="type-bars"><p class="muted small">No alerts yet.</p></div>
+      </section>
+      <section class="card" aria-label="Ground truth">
+        <div class="card-head"><h2>Against the answer key</h2></div>
+        <p class="small muted">Only possible because this is a simulation. No model sees it.</p>
+        <div id="truth"></div>
+      </section>
+    </div>
+
+    <section class="card" aria-label="Try it on your phone">
+      <div class="card-head"><h2>Try to beat it on your own phone</h2></div>
+      <div class="join" id="join"></div>
+    </section>
+  </main>
+  <script src="/static/common.js"></script>
+  <script src="/static/dashboard.js"></script>
+</body>
+</html>

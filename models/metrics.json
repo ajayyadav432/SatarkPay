@@ -1,0 +1,853 @@
+{
+ "generated_at": "2026-10-30T18:25:26+05:30",
+ "versions": {
+  "xgboost": "3.4.1",
+  "seed": 42
+ },
+ "data": {
+  "note": "Everything here is synthetic: a simulated world written by the team. Real-world performance is unknown.",
+  "test_payments": 387688,
+  "test_scams": 2434,
+  "test_fraud_share": 0.006278244361445286,
+  "removed_known_scammers": 213,
+  "train_payments": 293416,
+  "train_scams": 2543,
+  "validation_payments": 104296,
+  "validation_scams": 824,
+  "unreported_share_in_training": 0.1,
+  "stealth_share": 0.4,
+  "n_features": 48,
+  "real_fraud_rate_note": "Reported UPI fraud is far rarer than in this simulation, which oversamples it so that the model has examples to learn from.",
+  "oversampling_factor": 922.8621854086504
+ },
+ "systems": {
+  "xgboost": {
+   "pr_auc": 0.9395615479324574,
+   "roc_auc": 0.9983017062889485,
+   "at_false_alarm_rate": {
+    "0.0001": {
+     "recall": 0.7691043549712407,
+     "precision": 0.9795918367346939,
+     "money_recall": 0.8553932113637771
+    },
+    "0.001": {
+     "recall": 0.891125718981101,
+     "precision": 0.8489236790606653,
+     "money_recall": 0.9495031017927541
+    },
+    "0.005": {
+     "recall": 0.9465899753492194,
+     "precision": 0.5445521153391634,
+     "money_recall": 0.9757392956082173
+    },
+    "0.01": {
+     "recall": 0.9658997534921939,
+     "precision": 0.3789490651192779,
+     "money_recall": 0.9860992847110284
+    }
+   }
+  },
+  "isolation_forest": {
+   "pr_auc": 0.20920410853956628,
+   "roc_auc": 0.9008749732256804,
+   "at_false_alarm_rate": {
+    "0.0001": {
+     "recall": 0.039852095316351685,
+     "precision": 0.7028985507246377,
+     "money_recall": 0.05808110111906921
+    },
+    "0.001": {
+     "recall": 0.14338537387017256,
+     "precision": 0.47162162162162163,
+     "money_recall": 0.20470667378181415
+    },
+    "0.005": {
+     "recall": 0.29786359901396875,
+     "precision": 0.2724539646749342,
+     "money_recall": 0.3452101933503989
+    },
+    "0.01": {
+     "recall": 0.3882497945768283,
+     "precision": 0.19601742377100187,
+     "money_recall": 0.43447802317375167
+    }
+   }
+  },
+  "full_system": {
+   "pr_auc": 0.930984598596425,
+   "roc_auc": 0.9979228309774598,
+   "at_false_alarm_rate": {
+    "0.0001": {
+     "recall": 0.7867707477403451,
+     "precision": 0.9800409416581372,
+     "money_recall": 0.8509502311564429
+    },
+    "0.001": {
+     "recall": 0.8927691043549713,
+     "precision": 0.8491598280578351,
+     "money_recall": 0.950824522076655
+    },
+    "0.005": {
+     "recall": 0.9285127362366475,
+     "precision": 0.539765942202054,
+     "money_recall": 0.9684117075299903
+    },
+    "0.01": {
+     "recall": 0.9490550534100246,
+     "precision": 0.3748174590296933,
+     "money_recall": 0.9766510251752716
+    }
+   }
+  }
+ },
+ "policy": {
+  "bands": {
+   "low": 0.0031873881816864014,
+   "medium": 0.06203318062593324,
+   "high": 0.23609185453533207,
+   "critical": 0.769289552150372
+  },
+  "budgets": {
+   "low": 0.05,
+   "medium": 0.01,
+   "high": 0.002,
+   "critical": 0.0005
+  },
+  "test": {
+   "genuine": {
+    "n": 385254,
+    "ALLOW": 0.9940999963660339,
+    "WARN": 0.005500267356081961,
+    "HOLD": 0.0003971405877680699,
+    "BLOCK": 2.595690116131176e-06,
+    "flagged": 0.005900003633966163,
+    "stopped": 0.0003997362778842011
+   },
+   "all_fraud": {
+    "n": 2434,
+    "ALLOW": 0.06614626129827444,
+    "WARN": 0.09778142974527526,
+    "HOLD": 0.42235004108463436,
+    "BLOCK": 0.41372226787181593,
+    "flagged": 0.9338537387017255,
+    "stopped": 0.8360723089564502
+   },
+   "obvious_fraud": {
+    "n": 1746,
+    "ALLOW": 0.012027491408934709,
+    "WARN": 0.041237113402061855,
+    "HOLD": 0.4032073310423826,
+    "BLOCK": 0.5435280641466208,
+    "flagged": 0.9879725085910653,
+    "stopped": 0.9467353951890034
+   },
+   "careful_fraud": {
+    "n": 688,
+    "ALLOW": 0.20348837209302326,
+    "WARN": 0.24127906976744187,
+    "HOLD": 0.47093023255813954,
+    "BLOCK": 0.08430232558139535,
+    "flagged": 0.7965116279069767,
+    "stopped": 0.5552325581395349
+   },
+   "by_type": {
+    "fake_collect": {
+     "n": 562,
+     "ALLOW": 0.0035587188612099642,
+     "WARN": 0.021352313167259787,
+     "HOLD": 0.21530249110320285,
+     "BLOCK": 0.7597864768683275,
+     "flagged": 0.99644128113879,
+     "stopped": 0.9750889679715302
+    },
+    "phishing_link": {
+     "n": 257,
+     "ALLOW": 0.042801556420233464,
+     "WARN": 0.26459143968871596,
+     "HOLD": 0.23346303501945526,
+     "BLOCK": 0.4591439688715953,
+     "flagged": 0.9571984435797666,
+     "stopped": 0.6926070038910506
+    },
+    "qr_scam": {
+     "n": 96,
+     "ALLOW": 0.22916666666666666,
+     "WARN": 0.11458333333333333,
+     "HOLD": 0.3541666666666667,
+     "BLOCK": 0.3020833333333333,
+     "flagged": 0.7708333333333334,
+     "stopped": 0.65625
+    },
+    "mule_inflow": {
+     "n": 374,
+     "ALLOW": 0.06149732620320856,
+     "WARN": 0.10427807486631016,
+     "HOLD": 0.32085561497326204,
+     "BLOCK": 0.5133689839572193,
+     "flagged": 0.9385026737967914,
+     "stopped": 0.8342245989304813
+    },
+    "mule_layering": {
+     "n": 996,
+     "ALLOW": 0.0853413654618474,
+     "WARN": 0.08032128514056225,
+     "HOLD": 0.6134538152610441,
+     "BLOCK": 0.22088353413654618,
+     "flagged": 0.9146586345381527,
+     "stopped": 0.8343373493975904
+    },
+    "account_takeover": {
+     "n": 63,
+     "ALLOW": 0.1111111111111111,
+     "WARN": 0.25396825396825395,
+     "HOLD": 0.3968253968253968,
+     "BLOCK": 0.23809523809523808,
+     "flagged": 0.8888888888888888,
+     "stopped": 0.6349206349206349
+    },
+    "coached_transfer": {
+     "n": 86,
+     "ALLOW": 0.12790697674418605,
+     "WARN": 0.13953488372093023,
+     "HOLD": 0.6627906976744186,
+     "BLOCK": 0.06976744186046512,
+     "flagged": 0.872093023255814,
+     "stopped": 0.7325581395348837
+    }
+   },
+   "by_type_careful": {
+    "fake_collect": {
+     "n": 98,
+     "ALLOW": 0.02040816326530612,
+     "WARN": 0.05102040816326531,
+     "HOLD": 0.6938775510204082,
+     "BLOCK": 0.23469387755102042,
+     "flagged": 0.9795918367346939,
+     "stopped": 0.9285714285714286
+    },
+    "phishing_link": {
+     "n": 134,
+     "ALLOW": 0.08208955223880597,
+     "WARN": 0.417910447761194,
+     "HOLD": 0.34328358208955223,
+     "BLOCK": 0.15671641791044777,
+     "flagged": 0.917910447761194,
+     "stopped": 0.5
+    },
+    "qr_scam": {
+     "n": 7,
+     "ALLOW": 1.0,
+     "WARN": 0.0,
+     "HOLD": 0.0,
+     "BLOCK": 0.0,
+     "flagged": 0.0,
+     "stopped": 0.0
+    },
+    "mule_inflow": {
+     "n": 57,
+     "ALLOW": 0.3333333333333333,
+     "WARN": 0.2807017543859649,
+     "HOLD": 0.3684210526315789,
+     "BLOCK": 0.017543859649122806,
+     "flagged": 0.6666666666666666,
+     "stopped": 0.38596491228070173
+    },
+    "mule_layering": {
+     "n": 342,
+     "ALLOW": 0.24853801169590642,
+     "WARN": 0.21637426900584794,
+     "HOLD": 0.5058479532163743,
+     "BLOCK": 0.029239766081871343,
+     "flagged": 0.7514619883040936,
+     "stopped": 0.5350877192982456
+    },
+    "account_takeover": {
+     "n": 26,
+     "ALLOW": 0.2692307692307692,
+     "WARN": 0.46153846153846156,
+     "HOLD": 0.23076923076923078,
+     "BLOCK": 0.038461538461538464,
+     "flagged": 0.7307692307692307,
+     "stopped": 0.2692307692307692
+    },
+    "coached_transfer": {
+     "n": 24,
+     "ALLOW": 0.375,
+     "WARN": 0.125,
+     "HOLD": 0.4166666666666667,
+     "BLOCK": 0.08333333333333333,
+     "flagged": 0.625,
+     "stopped": 0.5
+    }
+   },
+   "money": {
+    "fraud_total": 22305305.045608465,
+    "flagged": 21652828.25555136,
+    "stopped": 20907906.88636107
+   }
+  }
+ },
+ "layers": [
+  {
+   "layers": "Payer behaviour only",
+   "n_features": 23,
+   "pr_auc": 0.49612304547482167,
+   "recall_at_0.0001": 0.30895645028759244,
+   "recall_at_0.001": 0.4005751848808546,
+   "recall_at_0.005": 0.5094494658997535,
+   "recall_at_0.01": 0.5636811832374692
+  },
+  {
+   "layers": "+ the account's own money moves",
+   "n_features": 28,
+   "pr_auc": 0.5156585987256251,
+   "recall_at_0.0001": 0.3266228430566968,
+   "recall_at_0.001": 0.41372226787181593,
+   "recall_at_0.005": 0.5225965488907148,
+   "recall_at_0.01": 0.5792933442892358
+  },
+  {
+   "layers": "+ payee signals (mules)",
+   "n_features": 41,
+   "pr_auc": 0.8977568167680714,
+   "recall_at_0.0001": 0.6524239934264585,
+   "recall_at_0.001": 0.8118323746918652,
+   "recall_at_0.005": 0.918241577649959,
+   "recall_at_0.01": 0.947000821692687
+  },
+  {
+   "layers": "+ SatarkAI context (note, link, UPI ID, SMS)",
+   "n_features": 48,
+   "pr_auc": 0.9395615479324574,
+   "recall_at_0.0001": 0.7691043549712407,
+   "recall_at_0.001": 0.891125718981101,
+   "recall_at_0.005": 0.9465899753492194,
+   "recall_at_0.01": 0.9658997534921939
+  },
+  {
+   "layers": "+ Isolation Forest and hard rules (the full system)",
+   "n_features": 48,
+   "pr_auc": 0.930984598596425,
+   "recall_at_0.0001": 0.7867707477403451,
+   "recall_at_0.001": 0.8927691043549713,
+   "recall_at_0.005": 0.9285127362366475,
+   "recall_at_0.01": 0.9490550534100246
+  },
+  {
+   "layers": "Isolation Forest alone (no labels at all)",
+   "n_features": null,
+   "pr_auc": 0.20920410853956628,
+   "recall_at_0.0001": 0.039852095316351685,
+   "recall_at_0.001": 0.14338537387017256,
+   "recall_at_0.005": 0.29786359901396875,
+   "recall_at_0.01": 0.3882497945768283
+  }
+ ],
+ "leave_one_scam_out": [
+  {
+   "held_out": "fake_collect",
+   "n_test": 562,
+   "xgb_alone_recall": 0.06583629893238434,
+   "full_system_recall": 0.8149466192170819,
+   "xgb_alone_false_alarms": 0.00556256391886911,
+   "full_system_false_alarms": 0.006811090864728205,
+   "anomaly_alone_recall": 0.38256227758007116
+  },
+  {
+   "held_out": "phishing_link",
+   "n_test": 257,
+   "xgb_alone_recall": 0.3735408560311284,
+   "full_system_recall": 0.7315175097276264,
+   "xgb_alone_false_alarms": 0.0067643684426378446,
+   "full_system_false_alarms": 0.0076598815327031,
+   "anomaly_alone_recall": 0.2490272373540856
+  },
+  {
+   "held_out": "qr_scam",
+   "n_test": 96,
+   "xgb_alone_recall": 0.2708333333333333,
+   "full_system_recall": 0.65625,
+   "xgb_alone_false_alarms": 0.0061336157444179685,
+   "full_system_false_alarms": 0.00713036074901234,
+   "anomaly_alone_recall": 0.5416666666666666
+  },
+  {
+   "held_out": "mule_inflow",
+   "n_test": 374,
+   "xgb_alone_recall": 0.8449197860962567,
+   "full_system_recall": 0.8342245989304813,
+   "xgb_alone_false_alarms": 0.007143339199592996,
+   "full_system_false_alarms": 0.007857153981529068,
+   "anomaly_alone_recall": 0.5320855614973262
+  },
+  {
+   "held_out": "mule_layering",
+   "n_test": 996,
+   "xgb_alone_recall": 0.7881526104417671,
+   "full_system_recall": 0.7329317269076305,
+   "xgb_alone_false_alarms": 0.006175146786276067,
+   "full_system_false_alarms": 0.007296484916444735,
+   "anomaly_alone_recall": 0.2399598393574297
+  },
+  {
+   "held_out": "account_takeover",
+   "n_test": 63,
+   "xgb_alone_recall": 0.5873015873015873,
+   "full_system_recall": 0.8095238095238095,
+   "xgb_alone_false_alarms": 0.005110913838662285,
+   "full_system_false_alarms": 0.006258208869992265,
+   "anomaly_alone_recall": 0.5873015873015873
+  },
+  {
+   "held_out": "coached_transfer",
+   "n_test": 86,
+   "xgb_alone_recall": 0.9418604651162791,
+   "full_system_recall": 0.8953488372093024,
+   "xgb_alone_false_alarms": 0.005954513126404918,
+   "full_system_false_alarms": 0.0069460667507670265,
+   "anomaly_alone_recall": 0.13953488372093023
+  }
+ ],
+ "careful_scammers_world": {
+  "stealth_share": 0.9,
+  "payments": 215167,
+  "scams": 1272,
+  "actions": {
+   "genuine": {
+    "n": 213895,
+    "ALLOW": 0.993739919119194,
+    "WARN": 0.005820612917553005,
+    "HOLD": 0.00043946796325299795,
+    "BLOCK": 0.0,
+    "flagged": 0.006260080880806003,
+    "stopped": 0.00043946796325299795
+   },
+   "all_fraud": {
+    "n": 1272,
+    "ALLOW": 0.2358490566037736,
+    "WARN": 0.1501572327044025,
+    "HOLD": 0.47955974842767296,
+    "BLOCK": 0.13443396226415094,
+    "flagged": 0.7641509433962265,
+    "stopped": 0.6139937106918238
+   },
+   "obvious_fraud": {
+    "n": 191,
+    "ALLOW": 0.0,
+    "WARN": 0.005235602094240838,
+    "HOLD": 0.3298429319371728,
+    "BLOCK": 0.6649214659685864,
+    "flagged": 1.0,
+    "stopped": 0.9947643979057592
+   },
+   "careful_fraud": {
+    "n": 1081,
+    "ALLOW": 0.27752081406105455,
+    "WARN": 0.1757631822386679,
+    "HOLD": 0.5060129509713228,
+    "BLOCK": 0.04070305272895467,
+    "flagged": 0.7224791859389454,
+    "stopped": 0.5467160037002775
+   },
+   "by_type": {
+    "fake_collect": {
+     "n": 194,
+     "ALLOW": 0.010309278350515464,
+     "WARN": 0.07731958762886598,
+     "HOLD": 0.28865979381443296,
+     "BLOCK": 0.6237113402061856,
+     "flagged": 0.9896907216494846,
+     "stopped": 0.9123711340206185
+    },
+    "phishing_link": {
+     "n": 75,
+     "ALLOW": 0.18666666666666668,
+     "WARN": 0.3333333333333333,
+     "HOLD": 0.37333333333333335,
+     "BLOCK": 0.10666666666666667,
+     "flagged": 0.8133333333333334,
+     "stopped": 0.48
+    },
+    "qr_scam": {
+     "n": 27,
+     "ALLOW": 0.7037037037037037,
+     "WARN": 0.0,
+     "HOLD": 0.2962962962962963,
+     "BLOCK": 0.0,
+     "flagged": 0.2962962962962963,
+     "stopped": 0.2962962962962963
+    },
+    "mule_inflow": {
+     "n": 85,
+     "ALLOW": 0.3176470588235294,
+     "WARN": 0.21176470588235294,
+     "HOLD": 0.3411764705882353,
+     "BLOCK": 0.12941176470588237,
+     "flagged": 0.6823529411764706,
+     "stopped": 0.47058823529411764
+    },
+    "mule_layering": {
+     "n": 762,
+     "ALLOW": 0.2769028871391076,
+     "WARN": 0.1272965879265092,
+     "HOLD": 0.573490813648294,
+     "BLOCK": 0.02230971128608924,
+     "flagged": 0.7230971128608924,
+     "stopped": 0.5958005249343832
+    },
+    "account_takeover": {
+     "n": 53,
+     "ALLOW": 0.1509433962264151,
+     "WARN": 0.37735849056603776,
+     "HOLD": 0.32075471698113206,
+     "BLOCK": 0.1509433962264151,
+     "flagged": 0.8490566037735849,
+     "stopped": 0.4716981132075472
+    },
+    "coached_transfer": {
+     "n": 76,
+     "ALLOW": 0.25,
+     "WARN": 0.21052631578947367,
+     "HOLD": 0.4605263157894737,
+     "BLOCK": 0.07894736842105263,
+     "flagged": 0.75,
+     "stopped": 0.5394736842105263
+    }
+   },
+   "by_type_careful": {
+    "fake_collect": {
+     "n": 58,
+     "ALLOW": 0.034482758620689655,
+     "WARN": 0.2413793103448276,
+     "HOLD": 0.6379310344827587,
+     "BLOCK": 0.08620689655172414,
+     "flagged": 0.9655172413793104,
+     "stopped": 0.7241379310344828
+    },
+    "phishing_link": {
+     "n": 69,
+     "ALLOW": 0.2028985507246377,
+     "WARN": 0.36231884057971014,
+     "HOLD": 0.37681159420289856,
+     "BLOCK": 0.057971014492753624,
+     "flagged": 0.7971014492753623,
+     "stopped": 0.43478260869565216
+    },
+    "qr_scam": {
+     "n": 27,
+     "ALLOW": 0.7037037037037037,
+     "WARN": 0.0,
+     "HOLD": 0.2962962962962963,
+     "BLOCK": 0.0,
+     "flagged": 0.2962962962962963,
+     "stopped": 0.2962962962962963
+    },
+    "mule_inflow": {
+     "n": 85,
+     "ALLOW": 0.3176470588235294,
+     "WARN": 0.21176470588235294,
+     "HOLD": 0.3411764705882353,
+     "BLOCK": 0.12941176470588237,
+     "flagged": 0.6823529411764706,
+     "stopped": 0.47058823529411764
+    },
+    "mule_layering": {
+     "n": 725,
+     "ALLOW": 0.2910344827586207,
+     "WARN": 0.13379310344827586,
+     "HOLD": 0.5558620689655173,
+     "BLOCK": 0.019310344827586208,
+     "flagged": 0.7089655172413794,
+     "stopped": 0.5751724137931035
+    },
+    "account_takeover": {
+     "n": 52,
+     "ALLOW": 0.15384615384615385,
+     "WARN": 0.38461538461538464,
+     "HOLD": 0.3076923076923077,
+     "BLOCK": 0.15384615384615385,
+     "flagged": 0.8461538461538461,
+     "stopped": 0.46153846153846156
+    },
+    "coached_transfer": {
+     "n": 65,
+     "ALLOW": 0.2923076923076923,
+     "WARN": 0.24615384615384617,
+     "HOLD": 0.4307692307692308,
+     "BLOCK": 0.03076923076923077,
+     "flagged": 0.7076923076923077,
+     "stopped": 0.46153846153846156
+    }
+   },
+   "money": {
+    "fraud_total": 9885078.94912786,
+    "flagged": 8693771.984669555,
+    "stopped": 7355163.5011898335
+   }
+  }
+ },
+ "false_alarms_by_group": {
+  "hn_trip_pool": {
+   "name": "Pooling money for a trip, then paying once",
+   "n": 1078,
+   "flagged": 0.1038961038961039,
+   "stopped": 0.008348794063079777
+  },
+  "hn_shop": {
+   "name": "Shop owner on a personal UPI ID",
+   "n": 16864,
+   "flagged": 0.004625237191650854,
+   "stopped": 5.929791271347249e-05
+  },
+  "hn_first_rent": {
+   "name": "First rent payment to a new person",
+   "n": 320,
+   "flagged": 0.134375,
+   "stopped": 0.009375
+  },
+  "hn_big_purchase": {
+   "name": "First big purchase at a new merchant",
+   "n": 522,
+   "flagged": 0.04597701149425287,
+   "stopped": 0.0
+  },
+  "hn_big_known": {
+   "name": "Large emergency transfer to a known person",
+   "n": 284,
+   "flagged": 0.14788732394366197,
+   "stopped": 0.035211267605633804
+  },
+  "hn_new_phone": {
+   "name": "New phone",
+   "n": 330,
+   "flagged": 0.0030303030303030303,
+   "stopped": 0.0030303030303030303
+  },
+  "hn_travel": {
+   "name": "Travelling to another city",
+   "n": 923,
+   "flagged": 0.02600216684723727,
+   "stopped": 0.0
+  },
+  "hn_fair": {
+   "name": "A shop's very busy day at a fair",
+   "n": 3520,
+   "flagged": 0.005965909090909091,
+   "stopped": 0.0
+  },
+  "hn_new_shop": {
+   "name": "A newly opened shop",
+   "n": 3037,
+   "flagged": 0.02107342772472835,
+   "stopped": 0.0
+  },
+  "hn_note": {
+   "name": "A genuine note saying refund",
+   "n": 2254,
+   "flagged": 0.021739130434782608,
+   "stopped": 0.00354924578527063
+  },
+  "hn_bill_sms": {
+   "name": "Alarming bill reminder, then the real bill payment",
+   "n": 1123,
+   "flagged": 0.0017809439002671415,
+   "stopped": 0.0
+  },
+  "hn_forward": {
+   "name": "Parent sends money, student pays the fee an hour later",
+   "n": 2258,
+   "flagged": 0.062444641275465014,
+   "stopped": 0.003985828166519044
+  },
+  "all_merchants": {
+   "name": "All payments to merchants",
+   "n": 277286,
+   "flagged": 0.0033539378115014823,
+   "stopped": 1.4425538974199923e-05
+  },
+  "small_unverified_merchants": {
+   "name": "Small unverified merchants",
+   "n": 168375,
+   "flagged": 0.0029339272457312546,
+   "stopped": 2.3756495916852265e-05
+  }
+ },
+ "real_world_correction": {
+  "flagged": {
+   "reported_fraud_rate": 6.803013993541442e-06,
+   "per_million": 6.803013993541442,
+   "recall": 0.9338537387017255,
+   "false_alarm_rate": 0.005900003633966163,
+   "precision": 0.0010756314929739321,
+   "false_alarms_per_real_fraud": 928.6864274912366,
+   "alerts_per_million_payments": 5906.316516211186
+  },
+  "stopped": {
+   "reported_fraud_rate": 6.803013993541442e-06,
+   "per_million": 6.803013993541442,
+   "recall": 0.8360723089564502,
+   "false_alarm_rate": 0.0003997362778842011,
+   "precision": 0.014029382852163066,
+   "false_alarms_per_real_fraud": 70.2789728912287,
+   "alerts_per_million_payments": 405.4213700901521
+  },
+  "blocked": {
+   "reported_fraud_rate": 6.803013993541442e-06,
+   "per_million": 6.803013993541442,
+   "recall": 0.41372226787181593,
+   "false_alarm_rate": 2.595690116131176e-06,
+   "precision": 0.5202288891931383,
+   "false_alarms_per_real_fraud": 0.9222308118085766,
+   "alerts_per_million_payments": 5.410230835386657
+  }
+ },
+ "likely_type_accuracy": {
+  "account_takeover": 0.5892857142857143,
+  "coached_transfer": 0.7466666666666667,
+  "fake_collect": 1.0,
+  "mule_inflow": 0.7264957264957265,
+  "mule_layering": 0.6805708013172338,
+  "phishing_link": 1.0,
+  "qr_scam": 0.6891891891891891,
+  "all": 0.8011438627364716
+ },
+ "top_features": [
+  {
+   "feature": "payee_age_days",
+   "share_of_gain": 0.19130003659032346
+  },
+  {
+   "feature": "payer_in_sum_24h",
+   "share_of_gain": 0.17392771496893103
+  },
+  {
+   "feature": "amount",
+   "share_of_gain": 0.08425120892834476
+  },
+  {
+   "feature": "payee_reports_30d",
+   "share_of_gain": 0.07905348144406671
+  },
+  {
+   "feature": "payee_verified",
+   "share_of_gain": 0.04707580388200927
+  },
+  {
+   "feature": "link_risk",
+   "share_of_gain": 0.046143684994550724
+  },
+  {
+   "feature": "amt_to_balance",
+   "share_of_gain": 0.039927513328692446
+  },
+  {
+   "feature": "kind_qr",
+   "share_of_gain": 0.03681602743729007
+  },
+  {
+   "feature": "note_risk",
+   "share_of_gain": 0.036186607088888295
+  },
+  {
+   "feature": "device_age_h",
+   "share_of_gain": 0.03477694856026729
+  },
+  {
+   "feature": "history_n",
+   "share_of_gain": 0.03268683642463666
+  },
+  {
+   "feature": "payee_is_merchant",
+   "share_of_gain": 0.03169829370967431
+  }
+ ],
+ "anomaly": {
+  "start_percentile": 0.99,
+  "full_percentile": 0.9999,
+  "max_weight": 0.15
+ },
+ "xgb_params": {
+  "objective": "binary:logistic",
+  "eval_metric": "aucpr",
+  "tree_method": "hist",
+  "max_depth": 6,
+  "eta": 0.08,
+  "subsample": 0.8,
+  "colsample_bytree": 0.8,
+  "min_child_weight": 5,
+  "lambda": 2.0,
+  "seed": 42
+ },
+ "paysim": {
+  "source": {
+   "name": "PaySim",
+   "paper": "Lopez-Rojas, Elmir, Axelsson: PaySim, a financial mobile money simulator for fraud detection (2016)",
+   "mirror": "huggingface.co/datasets/theman10/paysim",
+   "original": "kaggle.com/datasets/ealaxi/paysim1"
+  },
+  "rows_used": 2770409,
+  "fraud_used": 8213,
+  "test_rows": 43568,
+  "test_fraud": 1618,
+  "test_fraud_share": 0.03713734851266985,
+  "finding": {
+   "fraud_by_type": {
+    "CASH_IN": 0,
+    "CASH_OUT": 4116,
+    "DEBIT": 0,
+    "PAYMENT": 0,
+    "TRANSFER": 4097
+   },
+   "fraud_rows_emptying_the_account": 0.9755266041641301,
+   "genuine_rows_emptying_the_account": 0.4272187781026401,
+   "fraud_where_amount_equals_balance": 0.9782052843053696,
+   "genuine_where_amount_equals_balance": 1.0860923699838824e-06
+  },
+  "split": "by time: step < 500 train, < 600 validation, the rest test",
+  "without_balance_columns": {
+   "pr_auc": 0.697497330473085,
+   "roc_auc": 0.9311776999223574,
+   "recall_at_0.1pct": 0.4011124845488257,
+   "recall_at_1pct": 0.5865265760197775
+  },
+  "with_balance_columns": {
+   "pr_auc": 0.9975983559004373,
+   "roc_auc": 0.9976835098585491,
+   "recall_at_0.1pct": 0.9975278121137207,
+   "recall_at_1pct": 0.9975278121137207
+  },
+  "isolation_forest_no_labels": {
+   "pr_auc": 0.3281225605104968,
+   "roc_auc": 0.8566761227607768,
+   "recall_at_0.1pct": 0.08776266996291718,
+   "recall_at_1pct": 0.23362175525339926
+  },
+  "seconds": 167
+ },
+ "latency": {
+  "note": "Measured on the team's laptop (12 logical cores) with one server process, about one payment in ten being risky. It says nothing about a bank's production load.",
+  "engine": {
+   "events": 28285,
+   "per_second": 1579.0856121854843,
+   "p50_ms": 0.52,
+   "p95_ms": 3.77,
+   "p99_ms": 11.43,
+   "mean_ms": 1.11
+  },
+  "http": {
+   "requests": 3000,
+   "p50_ms": 2.27,
+   "p95_ms": 5.06,
+   "p99_ms": 6.98,
+   "alert_share": 0.126,
+   "alert_p95_ms": 7.36
+  },
+  "concurrent": {
+   "client_processes": 4,
+   "per_second": 482.9845870272302,
+   "p50_ms": 6.85,
+   "p95_ms": 15.94,
+   "p99_ms": 21.83
+  }
+ }
+}

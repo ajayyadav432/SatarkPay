@@ -1,0 +1,265 @@
+"""The whole story in a real (headless) browser, against the real server.
+
+Skipped automatically when Playwright or its Chromium is not installed:
+    .venv/bin/python -m pip install -r requirements-dev.txt && .venv/bin/python -m playwright install chromium
+"""
+import os
+import socket
+import subprocess
+import sys
+import time
+import urllib.request
+from pathlib import Path
+
+import pytest
+
+playwright_api = pytest.importorskip("playwright.sync_api", reason="playwright is not installed")
+ROOT = Path(__file__).resolve().parent.parent
+pytestmark = pytest.mark.e2e
+
+
+def _free_port() -> int:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+@pytest.fixture(scope="module")
+def base(tmp_path_factory):
+    port = _free_port()
+    env = dict(os.environ, SATARKPAY_DB=str(tmp_path_factory.mktemp("e2e") / "e2e.db"), SATARKPAY_LIVE_USERS="1200", SATARKPAY_AUTOSTART="1")
+    proc = subprocess.Popen([sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(port), "--log-level", "warning"],
+                            cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    url = f"http://127.0.0.1:{port}"
+    for _ in range(120):
+        try:
+            urllib.request.urlopen(url + "/api/health", timeout=1)
+            break
+        except OSError:
+            time.sleep(0.25)
+    else:
+        proc.kill()
+        pytest.fail("the server did not start: " + proc.stdout.read().decode()[:2000])
+    yield url
+    proc.terminate()
+    proc.wait(timeout=10)
+
+
+@pytest.fixture(scope="module")
+def browser():
+    with playwright_api.sync_playwright() as p:
+        try:
+            b = p.chromium.launch()
+        except Exception as exc:
+            pytest.skip(f"Chromium is not installed: {exc}")
+        yield b
+        b.close()
+
+
+@pytest.fixture()
+def problems():
+    return []
+
+
+@pytest.fixture()
+def desktop(browser, problems):
+    ctx = browser.new_context(viewport={"width": 1440, "height": 900})
+    page = ctx.new_page()
+    page.on("pageerror", lambda e: problems.append(str(e)))
+    page.on("console", lambda m: problems.append(m.text) if m.type == "error" else None)
+    yield page
+    ctx.close()
+
+
+@pytest.fixture()
+def phone(browser, problems):
+    ctx = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+    page = ctx.new_page()
+    page.on("pageerror", lambda e: problems.append(str(e)))
+    page.on("console", lambda m: problems.append(m.text) if m.type == "error" else None)
+    yield page
+    ctx.close()
+
+
+def open_phone(phone, base):
+    """The home screen. A request left over from an earlier test is answered first, as a person would."""
+    phone.goto(base + "/pay")
+    phone.wait_for_selector("[data-scenario=shop], #verdict")
+    while phone.locator("#verdict").count():
+        phone.click("#btn-cancel")
+        phone.wait_for_selector("#done")
+        phone.click("#btn-again")
+        phone.wait_for_selector("[data-scenario=shop], #verdict")
+
+
+def test_a_normal_payment_goes_through(phone, base, problems):
+    open_phone(phone, base)
+    phone.click("[data-scenario=shop]")
+    phone.wait_for_selector("#verdict")
+    assert phone.locator("#verdict").get_attribute("data-action") == "ALLOW"
+    phone.click("#btn-pay")
+    phone.wait_for_selector("#done")
+    assert phone.locator("#done").get_attribute("data-decision") == "paid"
+    assert not problems, problems
+
+
+def test_a_fake_refund_is_stopped_and_explained_in_two_languages(phone, base, problems):
+    open_phone(phone, base)
+    phone.click("[data-scenario=fake_collect]")
+    phone.wait_for_selector("#verdict")
+    assert phone.locator("#verdict").get_attribute("data-action") in ("HOLD", "BLOCK")
+    english = phone.inner_text("#reasons")
+    assert "never receives" in english and "Refund of Rs 2999" in english
+    assert phone.locator("a[href='tel:1930']").count() == 1
+    phone.click("#lang button:nth-child(2)")
+    assert "रोक" in phone.inner_text("#verdict-title")
+    assert any("ऀ" <= ch <= "ॿ" for ch in phone.inner_text("#reasons"))
+    phone.click("#btn-report")
+    phone.wait_for_selector("#report-count")
+    phone.click("#lang button:nth-child(1)")
+    assert not problems, problems
+
+
+def test_a_report_protects_the_next_person(phone, base):
+    open_phone(phone, base)
+    phone.click("[data-scenario=qr]")
+    phone.wait_for_selector("#verdict")
+    phone.click("#btn-report")
+    phone.wait_for_selector("#report-count")
+    assert "report" in phone.inner_text("#report-count")
+
+
+def test_a_warning_lets_the_person_continue_only_after_a_pause(phone, base):
+    open_phone(phone, base)
+    phone.click("text=Beat the model")
+    phone.fill("#beat-payee", "just.a.tiny.fee@simybl")
+    phone.fill("#beat-amount", "1500")
+    phone.fill("#beat-note", "processing fee")
+    phone.click("#beat-go")
+    phone.wait_for_selector("#verdict")
+    if phone.locator("#btn-anyway").count():
+        assert phone.locator("#btn-anyway").is_disabled(), "no instant click-through: the pause breaks the scammer's pressure"
+
+
+def test_a_script_in_a_note_stays_plain_text(phone, base, problems):
+    open_phone(phone, base)
+    phone.click("text=Beat the model")
+    phone.fill("#beat-payee", "xss.check.acct@simybl")
+    phone.fill("#beat-amount", "2500")
+    phone.fill("#beat-note", '<img src=x onerror="window.__xss=1"><script>window.__xss=1</script>')
+    phone.click("#beat-go")
+    phone.wait_for_selector("#verdict")
+    assert phone.evaluate("window.__xss === undefined")
+    assert phone.locator(".phone img").count() == 0 and phone.locator(".phone script").count() == 0
+    assert "<img" in phone.inner_text(".pay-note")
+    assert not problems, problems
+
+
+def test_bad_input_shows_a_message_not_a_crash(phone, base):
+    open_phone(phone, base)
+    phone.click("text=Beat the model")
+    phone.fill("#beat-payee", "not a upi id")
+    phone.fill("#beat-amount", "100")
+    phone.click("#beat-go")
+    phone.wait_for_selector("#beat-error:not(.hidden)")
+    assert "UPI ID" in phone.inner_text("#beat-error")
+
+
+def test_an_attack_on_the_dashboard_reaches_the_open_phone(desktop, phone, base, problems):
+    open_phone(phone, base)
+    desktop.goto(base + "/")
+    desktop.wait_for_selector("[data-attack=fake_collect]")
+    phone.wait_for_timeout(600)      # the phone's live connection is open
+    desktop.click("[data-attack=fake_collect]")
+    phone.wait_for_selector("#verdict", timeout=30000)
+    assert phone.locator("#verdict").get_attribute("data-action") in ("WARN", "HOLD", "BLOCK")
+    assert "refund-sbi" in phone.inner_text(".pay-to")
+    phone.click("#btn-report")
+    phone.wait_for_selector("#report-count")
+    assert not problems, problems
+
+
+def test_a_request_is_not_lost_while_the_person_is_on_another_screen(desktop, phone, base, problems):
+    """Found in code review: a request arriving away from the home screen vanished."""
+    open_phone(phone, base)
+    phone.click("[data-scenario=shop]")
+    phone.wait_for_selector("#verdict")     # away from the home screen
+    desktop.goto(base + "/")
+    desktop.wait_for_selector("[data-attack=fake_collect]")
+    phone.wait_for_timeout(600)
+    desktop.click("[data-attack=fake_collect]")
+    desktop.wait_for_timeout(4000)
+    assert "refund-sbi" not in phone.inner_text(".pay-to"), "it does not interrupt"
+    phone.click("#btn-pay")
+    phone.wait_for_selector("#done")
+    phone.click("#btn-again")
+    phone.wait_for_selector("#verdict", timeout=30000)
+    assert "refund-sbi" in phone.inner_text(".pay-to"), "it is waiting for them on the way back"
+    assert not problems, problems
+
+
+def test_the_dashboard_updates_live_and_explains_an_alert(desktop, base, problems):
+    desktop.goto(base + "/")
+    desktop.wait_for_selector("[data-attack=mule_ring]")
+    desktop.wait_for_selector("#feed tr", timeout=15000)
+    desktop.click("[data-attack=mule_ring]")
+    desktop.wait_for_selector(".alert-item", timeout=30000)
+    desktop.wait_for_selector("#detail .reasons li", timeout=30000)
+    desktop.wait_for_selector("#graph svg", timeout=30000)
+    assert desktop.locator(".shap-row").count() > 2
+    assert "null" not in desktop.inner_text("#detail") and "undefined" not in desktop.inner_text("#detail")
+    assert desktop.inner_text("#live-label").startswith("Live")
+    desktop.click(".alert-item")
+    desktop.click("#detail button:has-text('Confirm scam')")
+    desktop.wait_for_selector("#detail button:has-text('Confirmed scam')")
+    assert not problems, problems
+
+
+def test_pausing_and_changing_speed(desktop, base):
+    desktop.goto(base + "/")
+    desktop.wait_for_selector("#btn-run")
+    desktop.select_option("#speed", "100")
+    desktop.click("#btn-run")
+    for _ in range(40):
+        if "Paused" in desktop.inner_text("#live-label"):
+            break
+        desktop.wait_for_timeout(250)
+    assert "Paused" in desktop.inner_text("#live-label")
+    desktop.click("#btn-run")
+    desktop.select_option("#speed", "25")
+
+
+def test_the_model_card_shows_measured_numbers_and_limits(desktop, base, problems):
+    desktop.goto(base + "/how")
+    desktop.wait_for_selector("h1")
+    text = desktop.inner_text("#how")
+    for phrase in ("Everything here is synthetic", "Scams it has never seen", "Why accuracy is the wrong number", "Known limits", "PaySim", "Honest people who look suspicious"):
+        assert phrase in text, phrase
+    assert "NaN" not in text and "undefined" not in text
+    assert not problems, problems
+
+
+def test_the_merchant_sees_what_really_arrived(desktop, base, problems):
+    desktop.goto(base + "/merchant")
+    desktop.wait_for_selector("#btn-customer")
+    desktop.wait_for_timeout(600)
+    desktop.click("#btn-customer")
+    desktop.wait_for_selector("#rows tr", timeout=15000)
+    assert desktop.inner_text("#n") == "1" and desktop.inner_text("#total") != "₹0"
+    assert "Received" in desktop.inner_text("#rows")
+    assert not problems, problems
+
+
+@pytest.mark.parametrize("path", ["/", "/pay", "/merchant", "/how", "/go?u=http://sbi-kyc-update.xyz/login"])
+def test_nothing_scrolls_sideways_on_a_phone(phone, base, path, problems):
+    phone.goto(base + path)
+    phone.wait_for_timeout(900)
+    assert phone.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth"), path
+    assert not problems, problems
+
+
+def test_the_warning_page_from_satarkai_still_works(desktop, base, problems):
+    desktop.goto(base + "/go?u=http://sbi-kyc-update.xyz/login")
+    desktop.wait_for_selector("#go-actions a")
+    assert "sbi-kyc-update[.]xyz" in desktop.inner_text("#go-url")
+    assert not problems, problems

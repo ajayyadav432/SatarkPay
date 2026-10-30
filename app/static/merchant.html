@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>SatarkPay Merchant</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/theme.js"></script>
+</head>
+<body>
+  <div id="top"></div>
+  <main class="merchant">
+    <div class="demo-banner">Demo only. A fictional shop, no real money.</div>
+    <section class="card">
+      <div class="card-head"><h2>Ramesh Kirana Store</h2><span class="vpa muted" id="vpa"></span></div>
+      <div class="stat-row">
+        <div class="stat"><div class="stat-value" id="total">₹0</div><div class="stat-label">Received since you opened this screen</div></div>
+        <div class="stat"><div class="stat-value" id="n">0</div><div class="stat-label">Payments received</div></div>
+        <div class="stat"><div class="stat-value" id="stopped">0</div><div class="stat-label">Not received: stopped or not paid</div></div>
+      </div>
+    </section>
+    <section class="card" id="trust">
+      <div class="card-head"><h2>Trust this list, not the customer's screen</h2></div>
+      <p class="small">A fake payment screenshot can look perfect. A payment counts only when it appears here as received.</p>
+      <p class="small muted" id="fa-note"></p>
+    </section>
+    <section class="card">
+      <div class="card-head"><h2>Incoming payments</h2><button class="btn btn-small" id="btn-customer" type="button">A customer pays</button></div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Time</th><th>From</th><th class="right">Amount</th><th>Status</th></tr></thead><tbody id="rows"></tbody></table>
+      </div>
+      <p class="muted small" id="empty">Waiting for customers.</p>
+    </section>
+  </main>
+  <script src="/static/common.js"></script>
+  <script src="/static/merchant.js"></script>
+</body>
+</html>
