@@ -21,6 +21,7 @@ It runs offline on one laptop, and there is a public test copy at **https://sata
 | Ajay Yadav | [@ajayyadav432](https://github.com/ajayyadav432) |
 | Abhimanyu2211 | [@Abhimanyu2211](https://github.com/Abhimanyu2211) |
 | SaloniTrivedi11 | [@SaloniTrivedi11](https://github.com/SaloniTrivedi11) |
+| Harsh Verma | [@haarsxh](https://github.com/haarsxh) |
 
 ## Try it
 
