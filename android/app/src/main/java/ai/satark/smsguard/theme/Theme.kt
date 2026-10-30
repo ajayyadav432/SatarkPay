@@ -2,16 +2,19 @@ package ai.satark.smsguard.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private val Scheme = darkColorScheme(
-    primary = Blue, onPrimary = Color.White, secondary = Sky, background = Ink, onBackground = TextMain,
-    surface = Panel, onSurface = TextMain, surfaceVariant = PanelRaised, onSurfaceVariant = TextSoft, outline = Line,
-)
+@Composable
+private fun scheme() = if (AppTheme.dark)
+    darkColorScheme(primary = Blue, onPrimary = Color.White, secondary = Sky, background = Ink, onBackground = TextMain,
+        surface = Panel, onSurface = TextMain, surfaceVariant = PanelRaised, onSurfaceVariant = TextSoft, outline = Line)
+else
+    lightColorScheme(primary = Blue, onPrimary = Color.White, secondary = Sky, background = Ink, onBackground = TextMain,
+        surface = Panel, onSurface = TextMain, surfaceVariant = PanelRaised, onSurfaceVariant = TextSoft, outline = Color(0xFFCFD9DE))
 
-/** One fixed look, so the app is the same on every phone at the demo. */
 @Composable
 fun SatarkPayTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = Scheme, typography = Typography, content = content)
+    MaterialTheme(colorScheme = scheme(), typography = Typography, content = content)
 }

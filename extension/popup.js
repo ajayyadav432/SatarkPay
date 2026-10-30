@@ -7,6 +7,17 @@
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
   const pill = (level, score) => el("span", "pill lvl-" + level, level + (score !== undefined ? " " + score : ""));
 
+  // The choice is kept; until one is made, the popup follows the computer's setting.
+  const isDark = () => (document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark";
+  const paintTheme = () => { $("theme").textContent = isDark() ? "☀" : "☾"; };
+  chrome.storage.local.get("theme", (saved) => { if (saved.theme) document.documentElement.dataset.theme = saved.theme; paintTheme(); });
+  $("theme").addEventListener("click", () => {
+    const next = isDark() ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    chrome.storage.local.set({ theme: next });
+    paintTheme();
+  });
+
   $("version").textContent = "Version " + chrome.runtime.getManifest().version;
 
   // For testing the popup in a normal tab: popup.html?tab=<id> inspects that tab.

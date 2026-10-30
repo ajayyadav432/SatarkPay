@@ -6,6 +6,8 @@
 // If Gmail changes them, the bar simply does not appear; nothing else breaks.
 (function () {
   "use strict";
+  let theme = "";
+  const dark = () => theme ? theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
   const COLORS = { Safe: "#16a34a", Low: "#6b7280", Medium: "#f5a524", High: "#f07a4a", Critical: "#dc3545" };
   let done = new WeakSet();
   let enabled = true;   // the switch in the extension popup
@@ -38,7 +40,7 @@
     const box = css(document.createElement("div"), {
       display: "flex", "align-items": "center", gap: "10px", margin: "0 0 12px", padding: "10px 14px",
       "border-radius": "10px", border: "1px solid " + (COLORS[r.level] || "#999"), "border-left": "6px solid " + (COLORS[r.level] || "#999"),
-      background: "#fff", color: "#0f1419", font: "14px/1.45 system-ui, sans-serif",
+      background: dark() ? "#17181c" : "#fff", color: dark() ? "#e7e9ea" : "#0f1419", font: "14px/1.45 system-ui, sans-serif",
     });
     box.dataset.satarkBar = "";
     const pill = css(document.createElement("b"), { background: COLORS[r.level] || "#999", color: "#fff", padding: "2px 10px",
@@ -56,7 +58,7 @@
     link.target = "_blank";
     link.rel = "noopener";
     link.textContent = "Details";
-    css(link, { color: "#0b6fb8", "font-weight": "700", "white-space": "nowrap" });
+    css(link, { color: dark() ? "#1c9cf0" : "#0b6fb8", "font-weight": "700", "white-space": "nowrap" });
     box.append(link);
     body.before(box);
   }
@@ -78,7 +80,7 @@
     }), 500);
   }
   new MutationObserver(() => { if (enabled) scan(); }).observe(document.documentElement, { childList: true, subtree: true });
-  chrome.storage.local.get({ enabled: true }, (v) => { enabled = v.enabled !== false; if (enabled) scan(); });
+  chrome.storage.local.get({ enabled: true, theme: "" }, (v) => { theme = v.theme; enabled = v.enabled !== false; if (enabled) scan(); });
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local" || !changes.enabled) return;
     enabled = changes.enabled.newValue !== false;

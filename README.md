@@ -16,12 +16,12 @@ It runs offline on one laptop, and there is a public test copy at **https://sata
 
 ## Team
 
-| Name | GitHub |
-|---|---|
-| Ajay Yadav | [@ajayyadav432](https://github.com/ajayyadav432) |
-| Abhimanyu2211 | [@Abhimanyu2211](https://github.com/Abhimanyu2211) |
-| SaloniTrivedi11 | [@SaloniTrivedi11](https://github.com/SaloniTrivedi11) |
-| Harsh Verma | [@haarsxh](https://github.com/haarsxh) |
+| Name | Role | GitHub |
+|---|---|---|
+| Ajay Yadav | Team leader | [@ajayyadav432](https://github.com/ajayyadav432) |
+| Abhimanyu Singh Rathore | Member | [@Abhimanyu2211](https://github.com/Abhimanyu2211) |
+| Harsh Verma | Member | [@haarsxh](https://github.com/haarsxh) |
+| Saloni Trivedi | Member | [@SaloniTrivedi11](https://github.com/SaloniTrivedi11) |
 
 ## Try it
 

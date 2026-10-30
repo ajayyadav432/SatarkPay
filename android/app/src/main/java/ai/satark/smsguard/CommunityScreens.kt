@@ -1,6 +1,8 @@
 package ai.satark.smsguard
 
+import ai.satark.smsguard.theme.AppTheme
 import ai.satark.smsguard.theme.Blue
+import ai.satark.smsguard.theme.Sky
 import ai.satark.smsguard.theme.Line
 import ai.satark.smsguard.theme.PanelRaised
 import ai.satark.smsguard.theme.RiskBlock
@@ -50,6 +52,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -59,8 +63,18 @@ import kotlinx.coroutines.delay
 import org.json.JSONObject
 
 @Composable
+fun ThemeChip(store: Store) {
+    val label = if (AppTheme.dark) "Switch to light mode" else "Switch to dark mode"
+    Box(Modifier.size(36.dp).clip(PILL_SHAPE).background(PanelRaised).clickable { AppTheme.mode = if (AppTheme.dark) "light" else "dark"; store.theme = AppTheme.mode }
+        .semantics { contentDescription = label }, contentAlignment = Alignment.Center) {
+        Text(if (AppTheme.dark) "☀" else "☾", color = TextMain, fontSize = 16.sp)
+    }
+}
+
+@Composable
 fun LanguageRow(store: Store) {
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+        ThemeChip(store)
         AppLang.ALL.forEach { (code, label) ->
             val on = AppLang.code == code
             Box(Modifier.clip(PILL_SHAPE).background(if (on) Blue else PanelRaised).clickable { AppLang.code = code; store.language = code }.padding(horizontal = 12.dp, vertical = 8.dp)) {
@@ -212,7 +226,7 @@ private fun PostCard(post: JSONObject, store: Store, work: (() -> Unit) -> Unit,
                 if (post.optBoolean("blocked")) Tag(tr("blocked"), RiskBlock)
                 else if (post.optInt("reports") > 0) Tag(post.optInt("reports").toString() + " " + tr("reports"), RiskHold)
                 Text(post.optString("body"), color = TextMain, fontSize = 14.sp)
-                Text("${tr("comments")} (${post.optInt("comments")})", color = Blue, fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                Text("${tr("comments")} (${post.optInt("comments")})", color = Sky, fontSize = 13.sp, fontWeight = FontWeight.Medium,
                     modifier = Modifier.clickable { open = !open; if (open) loadComments() })
                 if (open) {
                     comments.forEach { Text(it.optString("author") + ": " + it.optString("body"), color = TextMain, fontSize = 13.sp) }
@@ -230,7 +244,7 @@ private fun PostCard(post: JSONObject, store: Store, work: (() -> Unit) -> Unit,
 @Composable
 private fun VoteButton(mark: String, on: Boolean, onClick: () -> Unit) {
     Box(Modifier.size(36.dp).clip(PILL_SHAPE).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
-        Text(mark, color = if (on) Blue else TextSoft, fontSize = 15.sp)
+        Text(mark, color = if (on) Sky else TextSoft, fontSize = 15.sp)
     }
 }
 

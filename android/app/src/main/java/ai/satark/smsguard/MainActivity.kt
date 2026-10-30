@@ -72,7 +72,9 @@ import ai.satark.smsguard.theme.RiskSafe
 import ai.satark.smsguard.theme.RiskUnknown
 import ai.satark.smsguard.theme.RiskWarn
 import ai.satark.smsguard.theme.SatarkPayTheme
+import ai.satark.smsguard.theme.AppTheme
 import ai.satark.smsguard.theme.Sky
+import android.content.res.Configuration
 import ai.satark.smsguard.theme.TextMain
 import ai.satark.smsguard.theme.TextSoft
 import java.text.DateFormat
@@ -82,11 +84,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Notifier.createChannels(this)
-        enableEdgeToEdge(SystemBarStyle.dark(android.graphics.Color.TRANSPARENT), SystemBarStyle.dark(android.graphics.Color.TRANSPARENT))
+        enableEdgeToEdge()
         // A QR picture shared to this app from WhatsApp or the gallery.
         val shared = if (intent?.action == Intent.ACTION_SEND)
             IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java) ?: intent.clipData?.getItemAt(0)?.uri else null
+        val saved = Store(this)
+        AppTheme.mode = saved.theme
+        AppTheme.systemDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
         setContent {
+            val dark = AppTheme.dark
+            LaunchedEffect(dark) {
+                val style = if (dark) SystemBarStyle.dark(android.graphics.Color.TRANSPARENT) else SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
+                enableEdgeToEdge(style, style)
+            }
             SatarkPayTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) { App(shared) }
             }
@@ -231,8 +241,8 @@ private fun HomeScreen(store: Store, note: String, onScan: () -> Unit, onEnter: 
                 Spacer(Modifier.height(10.dp))
                 Row(Modifier.fillMaxWidth().height(58.dp).clip(PILL_SHAPE).background(Color.White).clickable(onClick = onScan),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)) {
-                    UiIcon(R.drawable.ic_ui_qr, null, Ink, 24.dp)
-                    Text(tr("scan"), color = Ink, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                    UiIcon(R.drawable.ic_ui_qr, null, Color(0xFF0F1419), 24.dp)
+                    Text(tr("scan"), color = Color(0xFF0F1419), fontWeight = FontWeight.Bold, fontSize = 17.sp)
                 }
             }
         }

@@ -138,7 +138,7 @@ fun ScanScreen(onBack: () -> Unit, onFound: (String) -> Unit, onPicture: (Uri) -
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? -> if (uri != null) onPicture(uri) }
     LaunchedEffect(Unit) { if (!allowed) ask.launch(Manifest.permission.CAMERA) }
 
-    Box(Modifier.fillMaxSize().background(Ink)) {
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
         if (allowed) {
             QrCamera(Modifier.fillMaxSize()) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onFound(it) }
             ScanOverlay(Modifier.fillMaxSize())

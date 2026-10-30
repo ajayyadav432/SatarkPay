@@ -115,6 +115,8 @@ fun LoginScreen(store: Store, onConnection: () -> Unit, onLoggedIn: () -> Unit) 
     }
 
     Column(Modifier.fillMaxSize().safeDrawingPadding().padding(20.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+
+        LanguageRow(store)
         Image(painterResource(R.drawable.ic_logo), contentDescription = "SatarkPay logo", modifier = Modifier.size(60.dp).align(Alignment.CenterHorizontally))
         Text("SatarkPay", fontWeight = FontWeight.Bold, fontSize = 28.sp, color = TextMain, modifier = Modifier.align(Alignment.CenterHorizontally))
         Row(Modifier.fillMaxWidth().clip(PILL_SHAPE).background(PanelRaised).padding(4.dp)) {
@@ -148,13 +150,14 @@ fun LoginScreen(store: Store, onConnection: () -> Unit, onLoggedIn: () -> Unit) 
 }
 
 @Composable
-fun RoleHeader(title: String, subtitle: String, onLogout: () -> Unit) {
+fun RoleHeader(title: String, subtitle: String, store: Store, onLogout: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Image(painterResource(R.drawable.ic_logo), contentDescription = "SatarkPay logo", modifier = Modifier.size(42.dp))
         Column(Modifier.weight(1f)) {
             Text(title, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = TextMain, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(subtitle, fontSize = 13.sp, color = TextSoft, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
+        ThemeChip(store)
         LogoutButton(onLogout)
     }
 }
@@ -201,7 +204,7 @@ fun MerchantHome(store: Store, onLogout: () -> Unit, onLoggedOut: () -> Unit, on
     val rows = data?.optJSONArray("rows")?.let { a -> (0 until a.length()).map { a.getJSONObject(it) } }.orEmpty()
     Box(Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = bars.calculateTopPadding() + 12.dp, bottom = bars.calculateBottomPadding() + 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            item { RoleHeader(data?.optString("name")?.ifEmpty { null } ?: "Your shop", data?.optString("shop") ?: "Merchant", onLogout) }
+            item { RoleHeader(data?.optString("name")?.ifEmpty { null } ?: "Your shop", data?.optString("shop") ?: "Merchant", store, onLogout) }
             item { FeedHistoryRow(onFeed, onHistory) }
             item {
                 Column(Modifier.fillMaxWidth().clip(CARD_SHAPE).background(BrandBrush).padding(20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -272,7 +275,7 @@ fun AdminHome(store: Store, onLogout: () -> Unit, onLoggedOut: () -> Unit, onFee
     val running = kpis?.optBoolean("running") == true
     Box(Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = bars.calculateTopPadding() + 12.dp, bottom = bars.calculateBottomPadding() + 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            item { RoleHeader("Fraud analyst", if (running) "Live: payments are flowing" else "Paused", onLogout) }
+            item { RoleHeader("Fraud analyst", if (running) "Live: payments are flowing" else "Paused", store, onLogout) }
             item { FeedHistoryRow(onFeed, onHistory) }
             item {
                 Column(Modifier.fillMaxWidth().clip(CARD_SHAPE).background(BrandBrush).padding(20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

@@ -19,6 +19,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -49,7 +50,7 @@ class PayFlowTest {
     }
 
     @org.junit.Before fun logIn() { logInAs("user") }
-    @org.junit.After fun endLogin() { SatarkClient.token = null; AppLang.code = "en" }
+    @org.junit.After fun endLogin() { SatarkClient.token = null; AppLang.code = "en"; store.language = "en" }
 
     private fun logInAs(role: String) {
         store.serverUrl = Store.USB_SERVER
@@ -246,5 +247,15 @@ class PayFlowTest {
         rule.waitUntil(10000) { rule.onAllNodesWithText("history.check@simbank", substring = true).fetchSemanticsNodes().isNotEmpty() }
         assert(SatarkClient.exportHistory(store.serverUrl, "csv", "history.check").contains("history.check@simbank"))
         assert(org.json.JSONArray(SatarkClient.exportHistory(store.serverUrl, "json", "history.check")).length() > 0)
+    }
+
+    @Test fun lightAndDarkCanBeSwitchedAndAreKept() {
+        ai.satark.smsguard.theme.AppTheme.mode = "dark"
+        rule.setContent { Themed { LanguageRow(store) } }
+        rule.onNodeWithContentDescription("Switch to light mode").performClick()
+        rule.onNodeWithContentDescription("Switch to dark mode").assertExists()
+        assert(store.theme == "light")
+        store.theme = "system"
+        ai.satark.smsguard.theme.AppTheme.mode = "system"
     }
 }

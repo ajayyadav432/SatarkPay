@@ -444,7 +444,7 @@ dies → a second laptop set up beforehand. Nothing in the demo needs the intern
 
 1. **Are pre-built components allowed?** Unknown. Only the organisers can answer (section 15).
 2. **What are the random-challenge rounds?** Unknown (section 20).
-3. **Team:** Ajay Yadav, Abhimanyu2211, SaloniTrivedi11 and Harsh Verma (haarsxh), confirmed by Ajay. Roles still to be assigned (section 19).
+3. **Team:** Ajay Yadav (leader), Abhimanyu Singh Rathore, Harsh Verma and Saloni Trivedi, confirmed by Ajay. Other roles still to be assigned (section 19).
 
 ---
 

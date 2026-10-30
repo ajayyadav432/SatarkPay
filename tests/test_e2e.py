@@ -517,3 +517,39 @@ def test_history_lists_filters_and_downloads(phone, base, problems):
     phone.fill("#hist-q", "no-such-thing-at-all")
     phone.wait_for_selector("#hist-empty")
     assert not problems, problems
+
+
+def test_light_and_dark_can_be_chosen_on_the_website_and_are_remembered(phone, base, problems):
+    open_phone(phone, base)
+    colors = {}
+    for _ in range(2):
+        phone.click(".icon-btn")
+        mode = phone.get_attribute("html", "data-theme")
+        colors[mode] = phone.evaluate("getComputedStyle(document.body).backgroundColor")
+    assert colors == {"dark": "rgb(0, 0, 0)", "light": "rgb(255, 255, 255)"}
+    phone.goto(base + "/feed")
+    assert phone.get_attribute("html", "data-theme") == mode
+    assert not problems, problems
+
+
+def test_light_and_dark_can_be_chosen_in_the_extension(browser):
+    import functools
+    import http.server
+    import threading
+    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(ROOT / "extension"))
+    handler.log_message = lambda *a: None
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    ctx = browser.new_context(color_scheme="light")
+    page = ctx.new_page()
+    page.add_init_script("""window.__store = {}; window.chrome = { runtime: { getManifest: () => ({ version: "1" }), sendMessage: () => {}, lastError: null, getURL: (p) => p },
+      tabs: { query: (_q, cb) => cb([]), create: () => {} },
+      storage: { onChanged: { addListener: () => {} }, local: { get: (k, cb) => cb(typeof k === "string" ? { [k]: window.__store[k] } : { ...k, ...window.__store }), set: (v, cb) => { Object.assign(window.__store, v); cb && cb(); } } } };""")
+    page.goto(f"http://127.0.0.1:{server.server_address[1]}/popup.html")
+    page.wait_for_function("document.getElementById('theme').textContent !== ''")
+    assert page.evaluate("getComputedStyle(document.body).backgroundColor") == "rgb(255, 255, 255)"
+    page.click("#theme")
+    assert page.evaluate("getComputedStyle(document.body).backgroundColor") == "rgb(0, 0, 0)"
+    assert page.evaluate("window.__store.theme") == "dark"
+    ctx.close()
+    server.shutdown()

@@ -16,6 +16,10 @@ class Store(context: Context) {
         get() = prefs.getString("language", "en") ?: "en"
         set(v) = prefs.edit().putString("language", v).apply()
 
+    var theme: String
+        get() = prefs.getString("theme", "system") ?: "system"
+        set(v) = prefs.edit().putString("theme", v).apply()
+
     var pairingCode: String
         get() = prefs.getString("code", "") ?: ""
         set(v) = prefs.edit().putString("code", v.trim()).apply()
