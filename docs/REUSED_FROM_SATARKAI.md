@@ -7,7 +7,7 @@ SatarkPay was built for SPHINX'26 on top of SatarkAI, the team's earlier project
 ## Reused, unchanged
 
 From [ajayyadav432/SatarkAI](https://github.com/ajayyadav432/SatarkAI), commit `66b436a7e08b18719386351b2c709568f974e801`.
-75 files. Each one is byte for byte the same as in that commit. [`reused_manifest.json`](reused_manifest.json) records its SHA-256, and `tests/test_provenance.py` fails if any of them changes.
+72 files. Each one is byte for byte the same as in that commit. [`reused_manifest.json`](reused_manifest.json) records its SHA-256, and `tests/test_provenance.py` fails if any of them changes.
 
 | Where | What | Files |
 |---|---|---|
@@ -15,7 +15,7 @@ From [ajayyadav432/SatarkAI](https://github.com/ajayyadav432/SatarkAI), commit `
 | `app/data` | Rules and brand lists | 3 |
 | `ml/satarkai` | Trained text and URL models | 5 |
 | `tests/engine` | The engine's own tests | 7 |
-| `android` | SMS Guard Android app, except the 7 files listed below | 26 |
+| `android` | SMS Guard Android app, except the 10 files listed below | 23 |
 | `extension` | Link Guard browser extension | 11 |
 | `demo` | Demo web pages with fake scam links | 3 |
 | `app/static` | Warning page script, theme script, favicon, logo, Inter font | 6 |
@@ -25,7 +25,7 @@ The warning page's HTML (`app/static/go.html`) came from SatarkAI with the produ
 
 ## Reused, then changed
 
-The Android app could only read SMS. It had no camera and never checked a payment, so UPI QR scanning was added for SPHINX'26. These 7 files came from SatarkAI and were changed: `android/app/build.gradle.kts`, `android/gradle/libs.versions.toml`, `AndroidManifest.xml`, `MainActivity.kt`, `SatarkClient.kt`, `Store.kt` and `strings.xml`. The SMS checking itself still works the same way. `UpiQr.kt`, `QrScanner.kt`, `PayScreens.kt` and `UpiQrTest.kt` are new.
+The Android app could only read SMS. It had no camera and never checked a payment, so UPI QR scanning and a new interface were added for SPHINX'26. These 10 files came from SatarkAI and were changed: `build.gradle.kts`, `AndroidManifest.xml`, `MainActivity.kt`, `SatarkClient.kt`, `Store.kt`, `Color.kt`, `Theme.kt`, `strings.xml`, `themes.xml`, `libs.versions.toml`. The SMS checking itself still works the same way. `UpiQr.kt`, `QrScanner.kt`, `PayScreens.kt`, `Ui.kt` and the tests are new.
 
 ## New for SPHINX'26
 

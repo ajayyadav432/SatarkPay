@@ -27,6 +27,8 @@ class Store(context: Context) {
         prefs.edit().putString("recent", JSONArray(list.map { it.toJson() }).toString()).apply()
     }
 
+    fun clearRecent() = prefs.edit().putString("recent", "[]").apply()
+
     /** Replace one stored item (same time, sender and text) with an updated one. */
     @Synchronized
     fun replace(old: Checked, new: Checked) {

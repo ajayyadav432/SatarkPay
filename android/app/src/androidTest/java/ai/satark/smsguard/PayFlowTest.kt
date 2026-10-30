@@ -2,7 +2,15 @@ package ai.satark.smsguard
 
 import android.graphics.Bitmap
 import android.net.Uri
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import ai.satark.smsguard.theme.SatarkAISMSGuardTheme
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -30,6 +38,15 @@ class PayFlowTest {
     private val app = instrumentation.targetContext
     private val store = Store(app)
 
+    // These tests must not leave anything in the person's own history.
+    private val prefs = app.getSharedPreferences("satark", android.content.Context.MODE_PRIVATE)
+    private val savedRecent = prefs.getString("recent", "[]")
+    @org.junit.After fun restoreHistory() { prefs.edit().putString("recent", savedRecent).apply() }
+
+    @Composable private fun Themed(content: @Composable () -> Unit) {
+        SatarkAISMSGuardTheme { Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) { content() } }
+    }
+
     private fun readAsset(name: String): String? {
         val file = File(app.cacheDir, name)
         instrumentation.context.assets.open(name).use { input -> file.outputStream().use { input.copyTo(it) } }
@@ -41,7 +58,8 @@ class PayFlowTest {
     }
 
     private fun screenshot(name: String) {
-        rule.waitForIdle()
+        rule.mainClock.advanceTimeBy(1200)   // let the dial finish
+        Thread.sleep(600)                    // the system allows only so many screenshots a second
         val bitmap = instrumentation.uiAutomation.takeScreenshot() ?: return
         File(app.getExternalFilesDir(null), "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
@@ -52,8 +70,9 @@ class PayFlowTest {
         rule.setContent {
             var check by remember { mutableStateOf<PayCheck?>(null) }
             val c = check
-            if (c == null) ReviewScreen(qr, store, {}) { check = it } else ResultScreen(c, store) {}
+            Themed { if (c == null) ReviewScreen(qr, store, {}) { check = it } else ResultScreen(c, store) {} }
         }
+        screenshot("review_" + picture.substringAfterLast('_').substringBefore('.'))
         rule.onNodeWithText("Check before paying").performClick()
         rule.waitUntil(15000) { rule.onAllNodesWithText("Risk ", substring = true).fetchSemanticsNodes().isNotEmpty() }
     }
@@ -98,9 +117,18 @@ class PayFlowTest {
         screenshot("result_real")
     }
 
+    @Test fun theScannerFrameIsDrawn() {
+        rule.mainClock.autoAdvance = false     // its line moves for ever
+        rule.setContent { androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().background(Color(0xFF3B4A5A))) { ScanOverlay(Modifier.fillMaxSize()); ScanChrome({}, {}, "") } }
+        rule.mainClock.advanceTimeBy(600)
+        rule.onNodeWithText("Scan a UPI QR").assertExists()
+        Thread.sleep(600)
+        instrumentation.uiAutomation.takeScreenshot()?.let { b -> File(app.getExternalFilesDir(null), "scan_frame.png").outputStream().use { b.compress(Bitmap.CompressFormat.PNG, 100, it) } }
+    }
+
     @Test fun aLinkQrIsCheckedAsAPage() {
         val url = (UpiQr.parse(readAsset("satarkpay_qr_link.png")!!) as Scanned.Link).url
-        rule.setContent { LinkScreen(url, store) {} }
+        rule.setContent { Themed { LinkScreen(url, store) {} } }
         rule.waitUntil(15000) { rule.onAllNodesWithText("Do not open or pay", substring = true).fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithText("State Bank of India", substring = true).assertExists()
         screenshot("result_link")
