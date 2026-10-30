@@ -46,14 +46,21 @@ def base(tmp_path_factory):
 
 
 @pytest.fixture(scope="module")
-def browser():
+def pw():
     with playwright_api.sync_playwright() as p:
-        try:
-            b = p.chromium.launch()
-        except Exception as exc:
-            pytest.skip(f"Chromium is not installed: {exc}")
-        yield b
-        b.close()
+        yield p
+
+
+@pytest.fixture(scope="module")
+def browser(pw):
+    try:
+        # SATARKPAY_E2E_CDP=http://127.0.0.1:9333 runs these in an already open Google Chrome.
+        cdp = os.environ.get("SATARKPAY_E2E_CDP")
+        b = pw.chromium.connect_over_cdp(cdp) if cdp else pw.chromium.launch()
+    except Exception as exc:
+        pytest.skip(f"Chromium is not installed: {exc}")
+    yield b
+    b.close()
 
 
 @pytest.fixture()
@@ -263,3 +270,63 @@ def test_the_warning_page_from_satarkai_still_works(desktop, base, problems):
     desktop.wait_for_selector("#go-actions a")
     assert "sbi-kyc-update[.]xyz" in desktop.inner_text("#go-url")
     assert not problems, problems
+
+
+ATTACKS = ["fake_collect", "phishing_link", "mule_ring", "takeover", "coached"]
+SCENARIOS = ["shop", "fake_collect", "phishing", "qr", "mule", "coached", "p2p_collect"]
+
+
+@pytest.mark.parametrize("name", ATTACKS)
+def test_every_attack_button_shows_a_result_and_is_flagged(desktop, base, name, problems):
+    desktop.goto(base + "/")
+    desktop.wait_for_selector(f"[data-attack={name}]")
+    desktop.click(f"[data-attack={name}]")
+    slot = f"#attack-result-{name}"
+    desktop.wait_for_function("s => /[1-9]\\d* flagged/.test(document.querySelector(s).textContent)", arg=slot, timeout=60000)
+    assert "NaN" not in desktop.inner_text(slot) and "undefined" not in desktop.inner_text(slot)
+    assert not problems, problems
+
+
+@pytest.mark.parametrize("scenario", SCENARIOS)
+def test_every_phone_scenario_gets_the_right_kind_of_decision(phone, base, scenario, problems):
+    open_phone(phone, base)
+    phone.click(f"[data-scenario={scenario}]")
+    phone.wait_for_selector("#verdict")
+    action = phone.locator("#verdict").get_attribute("data-action")
+    if scenario == "shop":
+        assert action == "ALLOW"
+    else:
+        assert action in ("WARN", "HOLD", "BLOCK"), f"{scenario} got {action}"
+        assert phone.inner_text("#reasons").strip(), "a stopped payment always says why"
+    assert not problems, problems
+
+
+def test_a_stopped_payment_never_counts_as_money_lost(phone, base):
+    open_phone(phone, base)
+    phone.click("[data-scenario=mule]")
+    phone.wait_for_selector("#verdict")
+    assert phone.locator("#verdict").get_attribute("data-action") in ("HOLD", "BLOCK")
+    phone.click("#btn-cancel")
+    phone.wait_for_selector("#done")
+    assert phone.locator("#done").get_attribute("data-decision") != "paid"
+
+
+def test_the_extension_warns_on_a_dangerous_page_in_a_real_browser(pw, tmp_path):
+    """Uses Playwright's Chromium: branded Chrome no longer loads an unpacked extension from the command line."""
+    try:
+        urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=1)
+    except OSError:
+        pytest.skip("the extension only talks to port 8000: start ./run.sh first")
+    ext = str(ROOT / "extension")
+    try:
+        ctx = pw.chromium.launch_persistent_context(str(tmp_path), channel="chromium", args=[f"--disable-extensions-except={ext}", f"--load-extension={ext}"])
+    except Exception as exc:
+        pytest.skip(f"Chromium is not installed: {exc}")
+    try:
+        page = ctx.new_page()
+        page.route("http://sbi-kyc-update.xyz/**", lambda r: r.fulfill(status=200, content_type="text/html", body="<h1>KYC</h1>"))
+        page.goto("http://sbi-kyc-update.xyz/login")
+        page.wait_for_selector("#satark-page-bar", timeout=15000)
+        assert "looks dangerous" in page.inner_text("#satark-page-bar")
+    finally:
+        ctx.close()

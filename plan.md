@@ -82,7 +82,7 @@ sees numbers, many of these look normal. So:
 | Reuse | Copy the engine unchanged, as well as the Android app and the extension | Your choice: "new repo with existing code" |
 | Model | **Both** XGBoost and Isolation Forest | XGBoost learns known scams and is exactly explainable. Isolation Forest needs no labels, for scams never seen |
 | Data | Our UPI simulator, plus PaySim as a public benchmark | PaySim has no notes, links, devices or collect requests, so it cannot show R1 or R2. The PS allows either |
-| Stream | Simple simulator behind a small `Bus` class, not Kafka | The PS allows it, and this laptop has no Docker or Java. Kafka is named as the production path and is **not** built or tested |
+| Stream | Simple simulator behind a small `Bus` class, not Kafka | The PS allows it, and a stream simulator keeps the demo on one laptop with nothing else to install. Kafka is named as the production path and is **not** built or tested |
 | Explanations | Templates filled from SHAP values and real numbers, no LLM | Exact and repeatable, works offline, cannot invent a reason |
 | Front end | Plain HTML, CSS, JS, Chart.js stored locally. No build step | Same as SatarkAI, works with no internet on stage |
 | Hosting | Runs on the laptop; phones join over Wi-Fi or hotspot | Live streaming and in-memory state do not fit serverless hosting such as Vercel |
@@ -472,7 +472,7 @@ Every finding that changes the design goes here, with its evidence.
 - **30 Oct 2026.** PaySim: 97.8% of fraud rows have an amount equal to the whole balance, against 0.0001% of genuine rows. PR-AUC 0.998 with balance columns, 0.697 without. We report the lower one.
 - **30 Oct 2026.** Real fraud is about 6.8 per million, so at this budget about 965 alerts would be false per real scam. A bank would tighten the budget. This is why warnings are cheap and a model alone cannot block.
 - **30 Oct 2026.** Security review: DNS rebinding could reach laptop-only controls (hostnames are now refused), any device could plant an SMS for someone else (`/api/v1/sms` now needs the pairing code, and an SMS sent with a payment counts for that payment only), and any device could answer for another person's payment (a secret token is now required, clients cannot choose payment numbers, one person's reports count once). A backslash could disguise a link as official (now normalised). The scoring API still has no login: stated as a limit.
-- **30 Oct 2026.** No Docker or Java on this laptop, so real Kafka cannot be run or tested here. Stream simulator.
+- **30 Oct 2026.** Stream simulator, not Kafka. Correction: this first said the laptop had no Docker or Java. That check ran inside the VS Code Flatpak sandbox; the host has both. Kafka still has not been run or tested.
 - **30 Oct 2026.** `models/satarkai/` was moved to `ml/satarkai/` from outside the build session and `docs/` was removed. The
   move was kept and the config points there. Without its models the engine still answers, only worse (Critical 90 became
   High 78), and its copied tests skip silently. A new test fails loudly in that case, and training refuses to start.

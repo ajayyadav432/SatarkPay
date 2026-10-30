@@ -106,7 +106,7 @@ Where the words give it away, the other layers save it. Where only behaviour doe
 
 ## Engineering
 
-**Why no Kafka?** The PS allows a simple stream simulator, and this laptop has no Docker or Java. A small `Bus` class is where Kafka would go. That has not been tested, and we do not claim it.
+**Why no Kafka?** The PS allows a simple stream simulator, and a stream simulator keeps the demo on one laptop with nothing else to install. A small `Bus` class is where Kafka would go. That has not been tested, and we do not claim it.
 
 **How fast is it?** On this laptop, one server process: p50 2.27 ms, p95 5.06 ms, p99 6.98 ms over HTTP; 483 requests per second with 4 clients. Alerts take longer because they compute SHAP (p95 7.36 ms). It says nothing about a bank's production load.
 

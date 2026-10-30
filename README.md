@@ -144,10 +144,10 @@ On scams it has seen, XGBoost alone does slightly better than the full system. T
 - **Precision here is flattering.** The simulation has about 923 times more fraud than reported reality, so that the model has examples. If real fraud is that rare and the model were this good, which is unproven, there would be about 929 false alarms per real scam at this budget. A bank would set a much tighter budget. The design assumes this: warnings are cheap, blocks are rare, and a person always has a way out.
 - **Payee signals need a view across banks.** A single bank cannot see fan-in on another bank's account. That points to a deployment at the network level.
 - **No real UPI integration.** A hackathon cannot get one. The integration point is one API call before the payment is sent.
-- **Kafka is not built.** The problem statement allows a stream simulator, and the build laptop has no Docker or Java. The `Bus` class is where Kafka would go. That has not been tested.
+- **Kafka is not built.** The problem statement allows a stream simulator, and a stream simulator keeps the demo on one laptop with nothing else to install. The `Bus` class is where Kafka would go. That has not been tested.
 - **The scoring API has no login.** It is a demo for one local network. A real deployment needs authentication and rate limits.
 - **SMS privacy.** In this demo the laptop reads the SMS. The production design scores it on the phone and sends only the score.
-- **The Android app was not run on a real phone in this build.** Its requests are covered by contract tests. The extension was run in Chromium against this server.
+- **The Android app has been run on one real phone (Samsung SM-E366B, Android 17) over USB.** Connection and its built-in sample SMS worked against this server. A real incoming SMS has not been tested. The extension was run in Chromium against this server.
 - **The "this looks like" label is a best guess.** It named the right scam for 80% of flagged scams in the test. The reasons are exact. The label is not.
 
 ## Built on SatarkAI
