@@ -142,6 +142,8 @@ Where the words give it away, the other layers save it. Where only behaviour doe
 
 **Can a group get an honest shop blocked by reporting it?** No. Reports from 3 accounts only add a warning that says the reports are not verified. Only an admin can block. One account counts once. Fake accounts could still raise a warning, which is a known limit: sign-up has no identity check.
 
+**Are the posts in the feed real?** No. An empty feed starts with 6 made-up posts, each marked Sample, with invented IDs. We say so.
+
 **Why do you hide part of the UPI ID in the feed?** A report is an accusation nobody has checked, and a UPI ID often contains a phone number.
 
 **Why no cashback or offers comparison?** Our focus is security. We have no real offer data and would not invent any. It could come later, using offers published by the apps.

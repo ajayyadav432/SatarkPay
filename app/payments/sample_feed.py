@@ -1,0 +1,21 @@
+"""Made-up posts for the scam feed. The people and IDs are invented, and every ID ends in @sim..., so none can match a real person."""
+SAMPLE_POSTS = [
+    {"hours_ago": 2, "payee": "kyc.update.desk@simaxis", "category": "Fake collect", "reports": 4, "votes": 12,
+     "body": "Got a collect request saying my KYC had expired and my account would close today. The bank said it never sent this.",
+     "comments": ["Same message reached my father. He almost approved it.", "A bank never needs your PIN to update KYC."]},
+    {"hours_ago": 5, "payee": "cashback.prize.win@simybl", "category": "QR scam", "reports": 3, "votes": 9,
+     "body": "A shop sticker said scan to receive Rs 500 cashback. Scanning a QR code only ever sends money, so I did not enter my PIN.",
+     "comments": ["Check the name on your UPI app before paying any sticker."]},
+    {"hours_ago": 9, "payee": "", "category": "Phishing link", "reports": 0, "votes": 7,
+     "body": "SMS said my electricity would be cut tonight, with a link to pay. The site looked like the board's page, but the address was wrong.",
+     "comments": []},
+    {"hours_ago": 20, "payee": "job.deposit.hr@simicici", "category": "Job or prize", "reports": 2, "votes": 6,
+     "body": "Work from home offer asked for a Rs 2,000 registration deposit, then a bigger one to release my first salary.",
+     "comments": ["No real job asks you to pay to join."]},
+    {"hours_ago": 30, "payee": "cbi.officer.case@simsbi", "category": "Digital arrest", "reports": 5, "votes": 15,
+     "body": "A video caller in uniform said a parcel in my name had drugs and told me to stay on the call and move money to a safe account.",
+     "comments": ["Police do not ask for money on a call. Hang up and call 1930."]},
+    {"hours_ago": 50, "payee": "easy.earn.task@simhdfc", "category": "Mule account", "reports": 1, "votes": 3,
+     "body": "Someone offered me 10% to receive money in my account and send the rest on. That is how mule accounts work, and the account holder gets into trouble.",
+     "comments": []},
+]

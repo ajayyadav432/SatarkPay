@@ -46,7 +46,7 @@
     return h("article", { class: "card feed-post", "data-post": p.id },
       h("div", { class: "feed-votes" }, vote(1, "▲", tr.up), h("strong", { class: "feed-score", text: p.votes }), vote(-1, "▼", tr.down)),
       h("div", { class: "feed-main" },
-        h("div", { class: "small muted" }, h("span", { class: "pill", text: p.category }), ` ${p.author} · ${when}`),
+        h("div", { class: "small muted" }, p.sample ? h("span", { class: "pill pill-warn", title: tr.sampleNote, text: tr.sample }) : null, " ", h("span", { class: "pill", text: p.category }), ` ${p.author} · ${when}`),
         p.payee ? h("div", { class: "feed-payee" }, h("span", { class: "mono", text: p.payee }), p.reports ? h("span", { class: "pill pill-warn", text: tr.reports(p.reports) }) : null, p.blocked ? h("span", { class: "pill pill-block", text: tr.blocked }) : null) : null,
         h("p", { class: "feed-body", text: p.body }),
         h("div", { class: "feed-actions" },

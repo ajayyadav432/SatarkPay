@@ -1,7 +1,34 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><title>SatarkPay demo pages</title>
-<style>body{font:16px/1.6 system-ui,sans-serif;max-width:640px;margin:60px auto;padding:0 20px;color:#0b1f18}a{color:#047857;font-weight:600}</style></head>
-<body><h1>SatarkPay demo pages</h1>
-<p>Test pages with <b>fake</b> scam links for the SatarkPay Link Guard extension. Every name and offer is made up.</p>
-<ul><li><a href="social.html">Chatter: a fake social network feed with scam posts and messages</a></li>
-<li><a href="inbox.html">Demo inbox: two scam links and one real link</a></li></ul>
-<p>Started with <code>./run.sh demo</code>. Keep SatarkPay itself running (<code>./run.sh</code>) on port 8000.</p></body></html>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Extension test site</title>
+<link rel="stylesheet" href="site.css"><script src="site.js" defer></script></head>
+<body><main>
+<h1>SatarkPay extension test site</h1>
+<p class="muted">Everything here is made up. <b>Do not press continue on the warning page for the links in section 1.</b> Those addresses are not ours, and we do not know who owns them.</p>
+<p class="status" id="ready">You need <code>./run.sh</code> running on port 8000, and the extension loaded from the <code>extension</code> folder.</p>
+
+<h2>1. Links on a page</h2>
+<p>Risky links should get a small coloured badge within a few seconds. Open the extension popup: it should list them. Click one: you should see the warning page, not the site.</p>
+<table><thead><tr><th>Link</th><th>Should show</th></tr></thead><tbody>
+<tr><td><a id="scam1" href="http://sbi-kyc-update.xyz/login">sbi-kyc-update.xyz/login</a></td><td>Badge and warning (fake bank)</td></tr>
+<tr><td><a id="scam2" href="http://paypa1.com/signin?account=verify">paypa1.com/signin</a></td><td>Badge and warning (lookalike name)</td></tr>
+<tr><td><a id="scam3" href="http://secure-upi-refund.top/claim?amount=2999">secure-upi-refund.top/claim</a></td><td>Badge and warning (refund lure)</td></tr>
+<tr><td><a id="safe1" href="https://www.onlinesbi.sbi">onlinesbi.sbi</a></td><td>No badge, opens normally</td></tr>
+<tr><td><a id="safe2" href="https://en.wikipedia.org/wiki/Phishing">en.wikipedia.org</a></td><td>No badge, opens normally</td></tr>
+</tbody></table>
+
+<h2>2. A risky page</h2>
+<p>This page runs on your own computer, but its address looks like a fake bank. The extension warns first, and here it is safe to continue. A warning bar should then appear at the top of the page.</p>
+<p><a class="btn" id="risky-page" href="http://sbi-kyc-update.xyz.localhost:8765/fake-bank.html">Open the fake bank page</a></p>
+
+<h2>3. A scam email</h2>
+<p>This copies the parts of Gmail the extension reads. A verdict bar should appear above each email. The normal email should show no scam signs. Afterwards, search the sender in <a href="http://127.0.0.1:8000/history">History</a>.</p>
+<p><a class="btn" id="mail" href="mail.html">Open the scam emails</a> <a class="btn" id="mail-ok" href="mail-ok.html">Open a normal email</a></p>
+
+<h2>4. Switches</h2>
+<ul><li>Turn protection off in the popup, then reload: no badges and no warnings.</li>
+<li>Press the sun or moon button in the popup: it changes between light and dark.</li>
+<li>Stop <code>./run.sh</code> and reload: nothing is blocked, and the popup says the app is not reachable.</li></ul>
+
+<h2>More pages</h2>
+<ul><li><a href="social.html">Chatter: a made-up social network with scam posts</a></li><li><a href="inbox.html">Demo inbox: two scam links and one real link</a></li></ul>
+</main></body></html>

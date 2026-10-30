@@ -107,8 +107,8 @@ object SatarkClient {
         request("$server/api/v1/posts/$id/comments", "POST", null, JSONObject().put("body", body).toString())
     }
 
-    fun history(server: String, q: String): JSONObject =
-        request("$server/api/v1/history?q=" + URLEncoder.encode(q, "UTF-8"), "GET", null, null)
+    fun history(server: String, q: String, kind: String = ""): JSONObject =
+        request("$server/api/v1/history?limit=1000&q=" + URLEncoder.encode(q, "UTF-8") + "&kind=" + kind, "GET", null, null)
 
     fun clearHistory(server: String) { request("$server/api/v1/history", "DELETE", null, null) }
 

@@ -262,15 +262,16 @@ fun HistoryScreen(store: Store, onBack: () -> Unit) {
     var query by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
     var format by remember { mutableStateOf("csv") }
+    var kind by remember { mutableStateOf("") }
 
     fun load() = Thread {
-        val result = runCatching { SatarkClient.history(store.serverUrl, query.trim()).getJSONArray("checks") }
+        val result = runCatching { SatarkClient.history(store.serverUrl, query.trim(), kind).getJSONArray("checks") }
         (context as? ComponentActivity)?.runOnUiThread {
             result.onSuccess { a -> rows = (0 until a.length()).map { a.getJSONObject(it) } }
             result.onFailure { message = it.message ?: it.javaClass.simpleName }
         }
     }.start()
-    LaunchedEffect(query) { delay(250); load() }
+    LaunchedEffect(query, kind) { delay(250); load() }
 
     // The person chooses where the file goes, so the app needs no storage permission.
     val save = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("*/*")) { uri: Uri? ->
@@ -288,6 +289,13 @@ fun HistoryScreen(store: Store, onBack: () -> Unit) {
         LanguageRow(store)
         Text(tr("history_intro"), color = TextSoft, fontSize = 13.sp)
         OutlinedTextField(value = query, onValueChange = { query = it.take(100) }, singleLine = true, label = { Text(tr("search")) }, modifier = Modifier.fillMaxWidth())
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf("" to "kind_all", "payment" to "kind_payment", "sms" to "kind_sms", "email" to "kind_email", "link" to "kind_link").forEach { (key, label) ->
+                Box(Modifier.clip(PILL_SHAPE).background(if (kind == key) Blue else PanelRaised).clickable { kind = key }.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                    Text(tr(label), color = if (kind == key) Color.White else TextMain, fontSize = 13.sp)
+                }
+            }
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SecondaryButton(tr("save_csv"), Modifier.weight(1f)) { format = "csv"; save.launch("satarkpay-history.csv") }
             SecondaryButton(tr("save_json"), Modifier.weight(1f)) { format = "json"; save.launch("satarkpay-history.json") }
@@ -303,7 +311,7 @@ fun HistoryScreen(store: Store, onBack: () -> Unit) {
                     }
                     Column(Modifier.weight(1f)) {
                         Text(row.optString("subject"), color = TextMain, fontFamily = FontFamily.Monospace, fontSize = 13.sp, maxLines = 2)
-                        Text(row.optString("when") + " · " + row.optString("kind") + " · " + row.optString("action"), color = TextSoft, fontSize = 12.sp)
+                        Text(row.optString("when") + " · " + row.optString("kind") + " · " + row.optString("action") + row.optString("outcome").let { if (it.isEmpty()) "" else " · $it" }, color = TextSoft, fontSize = 12.sp)
                     }
                 }
             }

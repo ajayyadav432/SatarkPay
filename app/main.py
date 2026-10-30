@@ -27,6 +27,7 @@ from app.analysis.extract import normalise_url
 from app.analysis.pipeline import analyze, analyze_url
 from app.analysis.scoring import level_rank
 from app.payments import i18n
+from app.payments.sample_feed import SAMPLE_POSTS
 from app.payments import models as pay_models
 from app.payments import scenarios, store
 from app.payments.geo import city_index
@@ -47,6 +48,7 @@ def get_live() -> Live:
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     store.init()
+    store.seed_samples(SAMPLE_POSTS)
     if not pay_models.ready():
         raise RuntimeError("Models not found in models/. Run: ./run.sh train")
     engine = get_live()
@@ -322,7 +324,7 @@ def scan_stages(result: dict, txn: dict) -> list[dict]:
 
 
 def _feed_view(post: dict, votes: dict[int, int]) -> dict:
-    return {"id": post["id"], "created": post["created"], "author": post["author_name"], "payee": mask_vpa(post["payee"]), "category": post["category"], "body": _mask_text(post["body"]),
+    return {"id": post["id"], "created": post["created"], "author": post["author_name"], "sample": post["author"].startswith("sample:"), "payee": mask_vpa(post["payee"]), "category": post["category"], "body": _mask_text(post["body"]),
             "votes": int(post["votes"]), "comments": int(post["comments"]), "my_vote": votes.get(post["id"], 0), "reports": store.report_count(post["payee"]) if post["payee"] else 0,
             "blocked": bool(store.get_block(post["payee"])) if post["payee"] else False}
 
@@ -457,17 +459,48 @@ def api_unblock(payee: str, request: Request, _: str = ADMIN):
 
 # --- history and export ----------------------------------------------------------------
 
-EXPORT_FIELDS = ("created", "kind", "subject", "amount", "note", "score", "level", "action", "summary")
+EXPORT_FIELDS = ("created", "kind", "subject", "amount", "note", "score", "level", "action", "outcome", "summary")
+HISTORY_KINDS = {"payment": ("PAY", "QR", "LINK", "COLLECT", "SIMULATED"), "sms": ("SMS",), "email": ("EMAIL",), "link": ("LINK CHECK",), "social": ("SOCIAL",)}
+HistoryKind = Literal["", "payment", "sms", "email", "link", "social"]
+DEMO_USERS = {account["username"] for account in auth.ACCOUNTS.values()}
 
 
-def _history_rows(request: Request, q: str, action: str, limit: int, everyone: bool) -> list[dict]:
+def _simulated_rows(session: dict, everyone: bool, engine: Live, q: str, action: str, kind: str, seen: set[str]) -> list[dict]:
+    """Past payments from the simulation, kept in memory, for the demo accounts. They have no real date, only the simulation's clock."""
+    if session["u"] not in DEMO_USERS or kind not in ("", "payment"):
+        return []
+    if everyone:
+        rows = list(engine.feed)
+    elif session["r"] == "merchant":
+        rows = list(engine.shop_rows)
+    elif session["r"] == "user":
+        rows = [r for r in engine.feed if r["payer"] in _persona_vpas()]
+    else:
+        return []
+    out = []
+    needle, digits = q.lower(), re.sub(r"[\s+()-]", "", q)
+    for r in reversed(rows):
+        if r["txn_id"] in seen or (action and r["action"] != action):
+            continue
+        fields = f"{r['payee']} {r['payer']} {round(r['amount'])}".lower()
+        if needle and needle not in fields and not (digits.isdigit() and digits[-10:] in fields):
+            continue
+        out.append({"created": 0, "when": "Simulation " + r["time"], "kind": "SIMULATED", "subject": r["payee"], "amount": r["amount"], "note": "From " + r["payer"],
+                    "score": r["score"], "level": r["level"], "action": r["action"], "outcome": r["status"], "summary": "", "txn_id": r["txn_id"]})
+    return out
+
+
+def _history_rows(request: Request, q: str, action: str, limit: int, everyone: bool, kind: str = "") -> list[dict]:
     session = auth.session_of(request)
     if everyone and session["r"] != "admin":
         raise HTTPException(status_code=403, detail="This account cannot do that.")
-    rows = store.list_checks(None if everyone else session["u"], None if everyone else session["r"], q.strip(), action, limit)
+    # This laptop's own phone and extension: shown on the laptop or to a real login, never to a test login over Wi-Fi.
+    device = session["u"] in DEMO_USERS and (is_local(request) or not session.get("t"))
+    rows = store.list_checks(None if everyone else session["u"], None if everyone else session["r"], q.strip(), action, limit, HISTORY_KINDS.get(kind, ()), device)
     for row in rows:
         row["when"] = datetime.fromtimestamp(row["created"], IST).strftime("%Y-%m-%d %H:%M")
-    return rows
+    seen = {r["txn_id"] for r in rows}
+    return (rows + _simulated_rows(session, everyone, get_live(), q.strip(), action, kind, seen))[:limit]
 
 
 def _csv_safe(value) -> str:
@@ -477,9 +510,9 @@ def _csv_safe(value) -> str:
 
 
 @app.get("/api/v1/history")
-def api_history(request: Request, q: str = Query(default="", max_length=100), action: Literal["", "ALLOW", "WARN", "HOLD", "BLOCK"] = "", limit: int = Query(default=100, ge=1, le=500),
-                everyone: bool = False, _: str = ANYONE_LOGGED_IN):
-    return {"checks": _history_rows(request, q, action, limit, everyone)}
+def api_history(request: Request, q: str = Query(default="", max_length=100), action: Literal["", "ALLOW", "WARN", "HOLD", "BLOCK"] = "", limit: int = Query(default=500, ge=1, le=5000),
+                everyone: bool = False, kind: HistoryKind = "", _: str = ANYONE_LOGGED_IN):
+    return {"checks": _history_rows(request, q, action, limit, everyone, kind)}
 
 
 @app.delete("/api/v1/history")
@@ -491,8 +524,8 @@ def api_history_clear(request: Request, _: str = ANYONE_LOGGED_IN):
 
 @app.get("/api/v1/history/export.{fmt}")
 def api_history_export(fmt: Literal["csv", "json"], request: Request, q: str = Query(default="", max_length=100), action: Literal["", "ALLOW", "WARN", "HOLD", "BLOCK"] = "",
-                       everyone: bool = False, _: str = ANYONE_LOGGED_IN):
-    rows = _history_rows(request, q, action, 500, everyone)
+                       everyone: bool = False, kind: HistoryKind = "", _: str = ANYONE_LOGGED_IN):
+    rows = _history_rows(request, q, action, 5000, everyone, kind)
     fields = ("when", *EXPORT_FIELDS[1:])
     name = f"satarkpay-history.{fmt}"
     headers = {"Content-Disposition": f'attachment; filename="{name}"'}
@@ -505,10 +538,12 @@ def api_history_export(fmt: Literal["csv", "json"], request: Request, q: str = Q
     return Response("\ufeff" + buf.getvalue(), media_type="text/csv; charset=utf-8", headers=headers)     # the mark lets Excel read Hindi and rupee signs
 
 
-def _log_check(request: Request, kind: str, subject: str, amount, note: str, score: int, level: str, action: str, summary: str) -> None:
+def _log_check(request: Request, kind: str, subject: str, amount, note: str, score: int, level: str, action: str, summary: str, txn_id: str = "") -> None:
     session = auth.session_of(request)
     if session:
-        store.add_check(session["u"], session["r"], kind, subject, amount, note, score, level, action, summary)
+        store.add_check(session["u"], session["r"], kind, subject, amount, note, score, level, action, summary, txn_id)
+    elif not config.ON_VERCEL and not store.is_shared():     # the laptop's own phone or extension, which has no login
+        store.add_check(store.DEVICE, "device", kind, subject, amount, note, score, level, action, summary, txn_id)
 
 
 # --- login ---------------------------------------------------------------------------
@@ -579,7 +614,7 @@ def api_score(body: PaymentIn, request: Request, role: str = ANYONE_LOGGED_IN, e
     apply_reputation(result, body.payee)
     i18n.localise(result)
     result["stages"] = scan_stages(result, txn)
-    _log_check(request, body.kind, body.payee, body.amount, body.note or "", result["score"], result["level"], result["action"], result["headline_en"])
+    _log_check(request, body.kind, body.payee, body.amount, body.note or "", result["score"], result["level"], result["action"], result["headline_en"], txn["txn_id"])
     if body.record:     # an app that only wants it recorded: warned payments go ahead, stopped ones do not
         engine.decide(txn["txn_id"], "cancelled" if result["stopped"] else "paid", source="api", skip_pause=True)
     return {**result, "txn_id": txn["txn_id"], "token": engine.pending.get(txn["txn_id"], {}).get("token")}
@@ -600,6 +635,7 @@ def api_outcome(body: DecisionIn, request: Request, _: str = ANYONE_LOGGED_IN, e
         raise HTTPException(status_code=404, detail="Unknown or already decided payment.")
     if body.decision == "reported":
         store.add_report(payee, _reporter(request))
+    store.set_check_outcome(body.txn_id, body.decision)
     return done
 
 
@@ -814,6 +850,7 @@ def api_join_svg(_: str = ADMIN):
 # --- compatibility with the reused SatarkPay Android app and browser extension -----------
 
 _seen_ingest: dict[str, dict] = {}
+_last_link_logged: dict[str, float] = {}
 MAX_SEEN_INGEST = 2000
 
 
@@ -848,7 +885,7 @@ def api_ingest(body: IngestIn, request: Request, engine: Live = Depends(get_live
         _seen_ingest[key] = out
         while len(_seen_ingest) > MAX_SEEN_INGEST:
             _seen_ingest.pop(next(iter(_seen_ingest)))
-    _log_check(request, "MESSAGE CHECK", "Pasted message", None, "", r["score"], r["level"], "WARN" if level_rank(r["level"]) >= level_rank(config.WARN_FROM_LEVEL) else "ALLOW", r.get("category") or "")     # the words themselves are not kept
+    _log_check(request, body.channel.upper(), (body.sender or "Unknown sender").strip()[:200], None, "", r["score"], r["level"], "WARN" if level_rank(r["level"]) >= level_rank(config.WARN_FROM_LEVEL) else "ALLOW", r.get("category") or "")     # the words themselves are not kept
     return {**out, "duplicate": False}
 
 
@@ -871,7 +908,15 @@ def api_check_url(request: Request, u: str = Query(min_length=1, max_length=conf
         raise HTTPException(status_code=400, detail="Only http and https links can be checked.")
     result = analyze_url(url, raw=u, lookup=lookup)
     result["needs_warning"] = level_rank(result["level"]) >= level_rank(config.WARN_FROM_LEVEL)
-    _log_check(request, "LINK CHECK", url, None, "", result["score"], result["level"], "WARN" if result["needs_warning"] else "ALLOW", result["factors"][0]["title"] if result.get("factors") else "")
+    # The extension checks every link on every page, so only a risky one is kept when nobody is logged in, and only once a minute.
+    now = time.monotonic()
+    worth = auth.session_of(request) is not None or (result["needs_warning"] and now - _last_link_logged.get(url, -1e9) > 60)
+    if worth:
+        _last_link_logged[url] = now
+        while len(_last_link_logged) > MAX_SEEN_INGEST:
+            _last_link_logged.pop(next(iter(_last_link_logged)))
+    if worth:
+        _log_check(request, "LINK CHECK", url, None, "", result["score"], result["level"], "WARN" if result["needs_warning"] else "ALLOW", result["factors"][0]["title"] if result.get("factors") else "")
     return result
 
 

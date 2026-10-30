@@ -432,3 +432,44 @@ def test_a_check_returns_the_real_stages(clean):
     assert stages["words"] and stages["decision"] and not stages["details"]
     quiet = {s["id"]: s["warn"] for s in _score(logged_in("user"), "ramesh.kirana@simaxis")["stages"]}
     assert not quiet["words"]
+
+
+def test_a_message_is_found_by_its_senders_number_or_mail_id_and_its_words_are_not_kept(clean):
+    c = logged_in("user")
+    c.post("/api/ingest", json={"text": "Your KYC expired, update now http://sbi-kyc-update.xyz/login secret words", "channel": "sms", "sender": "+91 98765 43210", "source": "sms-app", "ref": "hist-sms"})
+    c.post("/api/ingest", json={"text": "Your account is limited, verify at http://paypa1.com/signin", "channel": "email", "sender": "alerts@paypa1.com", "source": "sms-app", "ref": "hist-mail"})
+    for query in ("9876543210", "98765-43210", "+919876543210"):
+        found = c.get("/api/v1/history", params={"q": query}).json()["checks"]
+        assert [x["kind"] for x in found] == ["SMS"], query
+    assert [x["subject"] for x in c.get("/api/v1/history?q=paypa1.com").json()["checks"]] == ["alerts@paypa1.com"]
+    assert [x["kind"] for x in c.get("/api/v1/history?kind=email").json()["checks"]] == ["EMAIL"]
+    assert "secret words" not in c.get("/api/v1/history/export.json").text
+
+
+def test_a_laptops_own_messages_reach_its_owner_but_not_a_stranger(clean, monkeypatch):
+    client = _client()
+    client.post("/api/ingest", headers={"X-Satark-Token": "test-pairing-code"}, json={"text": "Win a prize now http://paypa1.com/signin", "channel": "email", "sender": "own@paypa1.com", "source": "sms-app", "ref": "own-mail"})
+    assert logged_in("admin").get("/api/v1/history?q=own@paypa1").json()["checks"]
+    assert not _member("history.stranger").get("/api/v1/history?q=own@paypa1").json()["checks"]
+    test_login = _client()
+    assert test_login.post("/api/v1/auth/test-login", json={"role": "user"}).status_code == 200
+    assert not test_login.get("/api/v1/history?q=own@paypa1").json()["checks"], "a test login over Wi-Fi must not see them"
+
+
+def test_history_shows_what_was_decided_and_finds_an_amount(clean):
+    c = logged_in("user")
+    me = c.get("/api/v1/demo").json()["me"]
+    r = c.post("/api/v1/score", json={"payer": me["vpa"], "payee": "outcome.check@simybl", "amount": 1234, "kind": "PAY", "device": me["device"], "city": me["city"], "balance": me["balance"]}).json()
+    assert c.post("/api/v1/outcome", json={"txn_id": r["txn_id"], "token": r["token"], "decision": "cancelled"}).status_code == 200
+    row = c.get("/api/v1/history?q=1234").json()["checks"][0]
+    assert row["subject"] == "outcome.check@simybl" and row["outcome"] == "cancelled"
+
+
+def test_an_empty_feed_gets_sample_posts_marked_as_samples_with_made_up_ids(clean):
+    from app.payments.sample_feed import SAMPLE_POSTS
+    clean.seed_samples(SAMPLE_POSTS)
+    posts = _client().get("/api/v1/posts").json()["posts"]
+    assert len(posts) == len(SAMPLE_POSTS) and all(p["sample"] and p["author"] == "Sample post" for p in posts)
+    assert all(p["payee"] == "" or "@sim" in p["payee"] for p in SAMPLE_POSTS)
+    clean.seed_samples(SAMPLE_POSTS)
+    assert len(_client().get("/api/v1/posts").json()["posts"]) == len(SAMPLE_POSTS), "only into an empty feed"

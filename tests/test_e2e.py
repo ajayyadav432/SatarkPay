@@ -553,3 +553,19 @@ def test_light_and_dark_can_be_chosen_in_the_extension(browser):
     assert page.evaluate("window.__store.theme") == "dark"
     ctx.close()
     server.shutdown()
+
+
+def test_the_sample_feed_and_history_filters_show_on_the_website(phone, base, problems):
+    phone.goto(base + "/feed")
+    phone.wait_for_selector(".feed-post")
+    assert "Sample post" in phone.inner_text("#posts")
+    open_phone(phone, base)
+    phone.click("[data-scenario=fake_collect]")
+    phone.wait_for_selector("#verdict")
+    phone.click("#btn-cancel")
+    phone.wait_for_selector("#done")
+    phone.goto(base + "/history")
+    phone.wait_for_selector("#hist-rows [data-outcome=cancelled]")
+    phone.select_option("#hist-kind", "email")
+    phone.wait_for_selector("#hist-empty")
+    assert not problems, problems

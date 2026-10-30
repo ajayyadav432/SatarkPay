@@ -56,9 +56,17 @@ New to the project? Read the [Project Guide](docs/SatarkPay_Project_Guide.pdf). 
 
 - **Scam feed** (`/feed`): anyone can read it, and logged-in people can post, vote and comment. Real UPI IDs and phone numbers are masked, because a report is an accusation nobody has checked.
 - **Reports warn, an admin blocks.** Reports from 3 different accounts add a warning to payments to that ID. Only an admin can block it, so that a group cannot get an honest shop blocked. The server enforces a block even if someone calls the API directly. A public test admin can only block simulated IDs.
-- **History** (`/history`): each account sees only its own checks, with filters and CSV and JSON downloads. The words of checked messages are not kept.
+- **History** (`/history`): each account sees its own payments and checks, with what was decided. Search a phone number, mail ID, UPI ID or amount, and filter by decision or type (payments, SMS, email, links). Download as CSV or JSON. The words of checked messages are not kept, only who sent them. The demo accounts also see past simulated payments, which last until the server restarts.
+- **Messages from your own phone and extension** arrive without a login, so they appear for the demo accounts on the laptop or with a real password, never for a test login over Wi-Fi or for other sign-ups.
+- **Sample posts:** an empty feed starts with 6 made-up posts, each marked Sample, using invented `@sim` IDs. They are not real reports.
 - **Storage:** SQLite on a laptop, or Postgres when `SATARKPAY_DATABASE_URL` is set. Without a database, the online copy loses the feed and history whenever it restarts.
 - **Translations** were written without a native speaker's review, so the wording may not be natural. A sentence with no translation stays in English.
+
+## Try the browser extension
+
+1. Start the app with `./run.sh`, and in a second terminal start the test site with `./run.sh demo`.
+2. In Chrome, open `chrome://extensions`, turn on Developer mode, press **Load unpacked** and choose the `extension` folder.
+3. Open http://127.0.0.1:8765/ and follow the page. It covers risky links, a risky page, sample emails and the switches.
 
 ## Run it
 

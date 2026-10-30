@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import threading
+import re
 import time
 
 from app import config
@@ -53,7 +54,9 @@ CREATE TABLE IF NOT EXISTS checks (
     score INTEGER NOT NULL,
     level TEXT NOT NULL,
     action TEXT NOT NULL,
-    summary TEXT NOT NULL DEFAULT ''
+    summary TEXT NOT NULL DEFAULT '',
+    txn_id TEXT NOT NULL DEFAULT '',
+    outcome TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS checks_user ON checks(username, role);
 CREATE TABLE IF NOT EXISTS reports (
@@ -142,12 +145,18 @@ def init() -> None:
         if is_shared():
             _conn = _Postgres(config.DATABASE_URL)
             _conn.executescript(SCHEMA.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "BIGSERIAL PRIMARY KEY") + COMMUNITY_SCHEMA.format(serial="BIGSERIAL PRIMARY KEY"))
+            _conn.execute("ALTER TABLE checks ADD COLUMN IF NOT EXISTS txn_id TEXT NOT NULL DEFAULT ''")
+            _conn.execute("ALTER TABLE checks ADD COLUMN IF NOT EXISTS outcome TEXT NOT NULL DEFAULT ''")
             return     # many short-lived copies share this database, so one starting up must not clear anything
         config.DB_PATH.parent.mkdir(parents=True, exist_ok=True)
         _conn = sqlite3.connect(config.DB_PATH, check_same_thread=False)
         _conn.row_factory = sqlite3.Row
         _conn.execute("PRAGMA journal_mode=WAL")
         _conn.executescript(SCHEMA + COMMUNITY_SCHEMA.format(serial="INTEGER PRIMARY KEY AUTOINCREMENT"))
+        have = {r["name"] for r in _conn.execute("PRAGMA table_info(checks)")}
+        for column in ("txn_id", "outcome"):     # a database made by an older version
+            if column not in have:
+                _conn.execute(f"ALTER TABLE checks ADD COLUMN {column} TEXT NOT NULL DEFAULT ''")
         # Payment numbers start again when the simulation restarts, so they are not unique over time. Analysts' decisions are
         # the labels for the next training and must survive; alerts nobody looked at belong to the old run.
         _conn.execute("DELETE FROM alerts WHERE status = 'new'")
@@ -244,21 +253,43 @@ def get_account(role: str, username: str) -> dict | None:
 
 # --- what a person has checked ---------------------------------------------------------
 
-def add_check(username: str, role: str, kind: str, subject: str, amount: float | None, note: str, score: int, level: str, action: str, summary: str) -> int:
+def add_check(username: str, role: str, kind: str, subject: str, amount: float | None, note: str, score: int, level: str, action: str, summary: str, txn_id: str = "") -> int:
     with _lock:
-        return _insert("INSERT INTO checks (created, username, role, kind, subject, amount, note, score, level, action, summary) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                       (time.time(), username, role, kind, subject[:300], amount, note[:300], score, level, action, summary[:300]))
+        return _insert("INSERT INTO checks (created, username, role, kind, subject, amount, note, score, level, action, summary, txn_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                       (time.time(), username, role, kind, subject[:300], amount, note[:300], score, level, action, summary[:300], txn_id))
 
 
-def list_checks(username: str | None, role: str | None, q: str = "", action: str = "", limit: int = 100) -> list[dict]:
-    """One person's checks, or everyone's when username is None."""
+def set_check_outcome(txn_id: str, outcome: str) -> None:
+    with _lock:
+        _conn.execute("UPDATE checks SET outcome = ? WHERE txn_id = ?", (outcome, txn_id))
+        _conn.commit()
+
+
+DEVICE = "_device"     # messages from this laptop's own phone or browser extension, which arrive without a login
+
+
+def list_checks(username: str | None, role: str | None, q: str = "", action: str = "", limit: int = 100, kinds: tuple[str, ...] = (), device: bool = False) -> list[dict]:
+    """One person's checks, or everyone's when username is None. Searches numbers, mail IDs, UPI IDs, notes and amounts."""
     where, args = [], []
     if username is not None:
-        where += ["username = ?", "role = ?"]
+        mine = "(username = ? AND role = ?)"
         args += [username, role]
+        if device:
+            mine = f"({mine} OR username = ?)"
+            args.append(DEVICE)
+        where.append(mine)
     if q:
-        where.append("(LOWER(subject) LIKE ? OR LOWER(note) LIKE ?)")
-        args += [f"%{q.lower()}%"] * 2
+        text = f"%{q.lower()}%"
+        parts = ["LOWER(subject) LIKE ?", "LOWER(note) LIKE ?", "LOWER(summary) LIKE ?", "CAST(amount AS TEXT) LIKE ?"]
+        args += [text, text, text, f"%{q}%"]
+        digits = re.sub(r"[\s+()-]", "", q)
+        if digits.isdigit():     # +91 98765 43210, 98765-43210 and 9876543210 are the same number
+            parts.append("REPLACE(REPLACE(subject, ' ', ''), '-', '') LIKE ?")
+            args.append(f"%{digits[-10:]}%")
+        where.append("(" + " OR ".join(parts) + ")")
+    if kinds:
+        where.append("kind IN (" + ", ".join("?" * len(kinds)) + ")")
+        args += kinds
     if action:
         where.append("action = ?")
         args.append(action)
@@ -270,7 +301,7 @@ def list_checks(username: str | None, role: str | None, q: str = "", action: str
 
 def clear_checks(username: str, role: str) -> None:
     with _lock:
-        _conn.execute("DELETE FROM checks WHERE username = ? AND role = ?", (username, role))
+        _conn.execute("DELETE FROM checks WHERE (username = ? AND role = ?) OR username = ?", (username, role, DEVICE))
         _conn.commit()
 
 
@@ -379,3 +410,21 @@ def list_comments(post_id: int) -> list[dict]:
     with _lock:
         rows = _conn.execute("SELECT * FROM feed_comments WHERE post_id = ? AND hidden = 0 ORDER BY id", (post_id,)).fetchall()
     return [dict(r) for r in rows]
+
+
+def seed_samples(posts: list[dict]) -> None:
+    """Fills an empty feed with made-up posts, so that a new copy does not open blank. Nothing here is a real report."""
+    with _lock:
+        if _conn.execute("SELECT COUNT(*) AS n FROM feed_posts").fetchone()["n"]:
+            return
+    now = time.time()
+    for i, p in enumerate(posts):
+        with _lock:
+            post_id = _insert("INSERT INTO feed_posts (created, author, author_name, payee, category, body) VALUES (?, ?, ?, ?, ?, ?)",
+                              (now - p["hours_ago"] * 3600, f"sample:{i}", "Sample post", p["payee"], p["category"], p["body"]))
+        for n in range(p["reports"]):
+            add_report(p["payee"], f"sample:{i}:{n}")
+        for n in range(p["votes"]):
+            vote(post_id, f"sample:{i}:{n}", 1)
+        for c in p["comments"]:
+            add_comment(post_id, f"sample:{i}", "Sample comment", c)
