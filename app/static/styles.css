@@ -356,3 +356,7 @@ details.table-view summary { cursor: pointer; color: var(--muted); font-weight: 
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 @media print { .topbar, .controls, .attacks { display: none; } body { background: #ffffff; } }
+
+/* Test QR codes: always black on white, or a camera cannot read them. */
+.qr-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.qr-grid img { display: block; width: 100%; max-width: 280px; height: auto; margin: 8px auto; background: #fff; border-radius: 8px; }

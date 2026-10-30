@@ -106,6 +106,8 @@ Where the words give it away, the other layers save it. Where only behaviour doe
 
 ## Engineering
 
+**Does the phone app scan real UPI QR codes?** Yes, it reads the QR on the phone and checks the payment on the laptop. It does not pay. A real UPI ID has no history here, so only the ID, the amount and the note are checked, and the app tells the person that this is not a guarantee.
+
 **Why no Kafka?** The PS allows a simple stream simulator, and a stream simulator keeps the demo on one laptop with nothing else to install. A small `Bus` class is where Kafka would go. That has not been tested, and we do not claim it.
 
 **How fast is it?** On this laptop, one server process: p50 2.27 ms, p95 5.06 ms, p99 6.98 ms over HTTP; 483 requests per second with 4 clients. Alerts take longer because they compute SHAP (p95 7.36 ms). It says nothing about a bank's production load.

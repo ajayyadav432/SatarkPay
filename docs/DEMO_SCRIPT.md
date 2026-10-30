@@ -11,7 +11,8 @@ Live numbers change with every run, so read them off the screen. Do not memorise
 - [ ] Phone on the same Wi-Fi or hotspot, at `http://<laptop-ip>:8000/pay`, showing Sunita ji, in Hindi if the room would like that.
 - [ ] A second tab on the laptop at `/how`.
 - [ ] Restart the server just before going up, so the numbers on screen start from zero.
-- [ ] Optional: SMS Guard on an Android phone, paired, and a teammate ready to send a scam SMS.
+- [ ] Optional: the SatarkPay app on an Android phone, with `http://localhost:8000/qr` open on the laptop. Scan "Scan to receive" to show a scam stopped live.
+- [ ] Optional: the same app, paired, with SMS allowed, and a teammate ready to send a scam SMS.
 
 ## The script
 

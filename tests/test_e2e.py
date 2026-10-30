@@ -257,7 +257,7 @@ def test_the_merchant_sees_what_really_arrived(desktop, base, problems):
     assert not problems, problems
 
 
-@pytest.mark.parametrize("path", ["/", "/pay", "/merchant", "/how", "/go?u=http://sbi-kyc-update.xyz/login"])
+@pytest.mark.parametrize("path", ["/", "/pay", "/merchant", "/qr", "/how", "/go?u=http://sbi-kyc-update.xyz/login"])
 def test_nothing_scrolls_sideways_on_a_phone(phone, base, path, problems):
     phone.goto(base + path)
     phone.wait_for_timeout(900)
@@ -330,3 +330,12 @@ def test_the_extension_warns_on_a_dangerous_page_in_a_real_browser(pw, tmp_path)
         assert "looks dangerous" in page.inner_text("#satark-page-bar")
     finally:
         ctx.close()
+
+
+def test_the_test_qr_page_shows_a_readable_code_for_each_case(desktop, base, problems):
+    desktop.goto(base + "/qr")
+    desktop.wait_for_selector("[data-qr=phishing] img")
+    desktop.wait_for_load_state("networkidle")
+    sizes = desktop.eval_on_selector_all("[data-qr] img", "els => els.map(e => e.naturalWidth)")
+    assert len(sizes) == 5 and all(w > 0 for w in sizes)
+    assert not problems, problems

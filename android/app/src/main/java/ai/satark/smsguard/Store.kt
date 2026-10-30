@@ -35,8 +35,8 @@ class Store(context: Context) {
     }
 
     companion object {
-        // 10.0.2.2 is the laptop as seen from the Android emulator. On a real phone use the laptop's Wi-Fi address.
-        const val DEFAULT_SERVER = "http://10.0.2.2:8000"
+        // The laptop over USB, with ./run.sh phone running. Over Wi-Fi use the laptop's address. On the emulator use http://10.0.2.2:8000.
+        const val DEFAULT_SERVER = "http://127.0.0.1:8000"
         const val MAX_RECENT = 30
     }
 }

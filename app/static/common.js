@@ -86,7 +86,7 @@
   }
 
   function topbar(active) {
-    const links = [["/", "Dashboard"], ["/pay", "Phone"], ["/merchant", "Merchant"], ["/how", "How it works"]];
+    const links = [["/", "Dashboard"], ["/pay", "Phone"], ["/merchant", "Merchant"], ["/qr", "Test QR codes"], ["/how", "How it works"]];
     return h("header", { class: "topbar" },
       h("a", { class: "brand", href: "/" }, h("img", { src: "/static/logo.svg", alt: "", width: "30", height: "30" }), h("span", { text: "SatarkPay" })),
       h("nav", { class: "nav", "aria-label": "Screens" }, links.map(([href, label]) =>

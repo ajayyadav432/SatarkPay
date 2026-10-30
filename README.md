@@ -147,12 +147,12 @@ On scams it has seen, XGBoost alone does slightly better than the full system. T
 - **Kafka is not built.** The problem statement allows a stream simulator, and a stream simulator keeps the demo on one laptop with nothing else to install. The `Bus` class is where Kafka would go. That has not been tested.
 - **The scoring API has no login.** It is a demo for one local network. A real deployment needs authentication and rate limits.
 - **SMS privacy.** In this demo the laptop reads the SMS. The production design scores it on the phone and sends only the score.
-- **The Android app has been run on one real phone (Samsung SM-E366B, Android 17) over USB.** Connection and its built-in sample SMS worked against this server. A real incoming SMS has not been tested. The extension was run in Chromium against this server.
+- **The Android app has been run on one real phone (Samsung SM-E366B, Android 17) over USB.** Connection and its built-in sample SMS worked against this server. QR pictures, the check and the result screens were tested on that phone (`android/app/src/androidTest`). The camera was shown to open, but reading a QR through the lens and a real incoming SMS have not been tested. The extension was run in Chromium against this server.
 - **The "this looks like" label is a best guess.** It named the right scam for 80% of flagged scams in the test. The reasons are exact. The label is not.
 
 ## Built on SatarkAI
 
-The team's earlier project [SatarkAI](https://github.com/ajayyadav432/SatarkAI) won IEEE-IGNITE 2026. SatarkPay reuses its detection engine, Android app and browser extension, unchanged. Everything to do with transactions is new. [docs/REUSED_FROM_SATARKAI.md](docs/REUSED_FROM_SATARKAI.md) lists exactly what came from where, and a test checks the checksums.
+The team's earlier project [SatarkAI](https://github.com/ajayyadav432/SatarkAI) won IEEE-IGNITE 2026. SatarkPay reuses its detection engine and browser extension unchanged. It also reuses its Android app, which now scans UPI QR codes as well. Everything to do with transactions is new. [docs/REUSED_FROM_SATARKAI.md](docs/REUSED_FROM_SATARKAI.md) lists exactly what came from where, and a test checks the checksums.
 
 ## Project layout
 
@@ -172,14 +172,16 @@ ml/
   satarkai/          SatarkAI's trained text and URL models, unchanged
 models/              xgb.ubj, iforest.joblib, bundle.json, metrics.json
 tests/               unit, parity, API, security, acceptance R1-R10, browser; engine/ holds SatarkAI's own tests
-android/, extension/ SatarkAI SMS Guard and Link Guard, unchanged
+android/             the phone app: scans UPI QR codes and checks SMS (SMS part from SatarkAI)
+extension/           SatarkAI Link Guard, unchanged
 docs/                demo script, judging Q&A, reuse record, pitch deck
 plan.md              the plan, design decisions and the findings log
 ```
 
 ## Using the reused sensors
 
-- **SMS Guard (Android).** Build with `cd android && ./gradlew assembleDebug`, or reuse an existing install. Start with `./run.sh wifi`. In the app, enter `http://<laptop-ip>:8000` and the printed pairing code. A real SMS then becomes context: a payment that follows it is scored with it.
+- **Phone app (Android): scan a UPI QR.** Build with `cd android && ./gradlew assembleDebug`. Connect by USB and run `./run.sh phone` in a second terminal, or use `./run.sh wifi` and enter `http://<laptop-ip>:8000` under *Laptop connection*. Press *Scan UPI QR* and point it at a code on `http://localhost:8000/qr`, or share a QR picture to the app. It checks the payment and shows the decision and reasons. It never moves real money. A real UPI ID has no history in this system, so only its ID, amount and note are checked, and the app says so.
+- **Phone app (Android): SMS.** Enter the printed pairing code under *Laptop connection* and allow SMS. A real SMS then becomes context: a payment that follows it is scored with it.
 - **Link Guard (Chrome or Edge).** Load `extension/` at `chrome://extensions` with *Developer mode* on. It marks risky links on any page and shows a warning before they open. The server must be running on this laptop.
 
 ## Data sources and facts

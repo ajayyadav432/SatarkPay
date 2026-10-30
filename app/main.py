@@ -11,6 +11,7 @@ import socket
 import time
 from contextlib import asynccontextmanager
 from typing import Literal
+from urllib.parse import quote, urlencode
 
 import segno
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
@@ -205,6 +206,11 @@ def page_pay():
 @app.get("/merchant", include_in_schema=False)
 def page_merchant():
     return _page("merchant.html")
+
+
+@app.get("/qr", include_in_schema=False)
+def page_qr():
+    return _page("qr.html")
 
 
 @app.get("/how", include_in_schema=False)
@@ -406,6 +412,26 @@ def _lan_address() -> str | None:
         return f"http://{ip}:{config.PORT}"
     except OSError:
         return None
+
+
+# The QR codes on /qr: fake payment requests, for the phone app to scan.
+DEMO_QR = {"shop": "Ramesh Kirana", "qr": "OLX Buyer", "fake_collect": "SBI Refund", "mule": "Job Deposit"}
+
+
+def _demo_qr_text(engine: Live, name: str) -> str:
+    sc = next((s for s in scenarios.phone_scenarios(engine, "sunita") if s["id"] == name), None)
+    if sc is None:
+        raise HTTPException(status_code=404, detail="No such demo QR code.")
+    if name == "phishing":
+        return sc["link"]
+    return "upi://pay?" + urlencode({"pa": sc["payee"], "pn": DEMO_QR.get(name, ""), "am": f"{sc['amount']:.2f}", "tn": sc["note"], "cu": "INR"}, quote_via=quote)
+
+
+@app.get("/api/v1/demo/qr/{name}.svg", include_in_schema=False)
+def api_demo_qr(name: Literal["shop", "qr", "fake_collect", "mule", "phishing"], engine: Live = Depends(get_live)):
+    buf = io.BytesIO()
+    segno.make(_demo_qr_text(engine, name), error="m").save(buf, kind="svg", scale=8, border=4, dark="#000", light="#fff")
+    return Response(buf.getvalue(), media_type="image/svg+xml")
 
 
 @app.get("/api/v1/join")

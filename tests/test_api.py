@@ -524,3 +524,30 @@ def test_the_score_stays_fast_under_a_burst(api):
         lat.append((time.perf_counter() - t0) * 1000)
     lat.sort()
     assert lat[int(len(lat) * 0.95)] < 100, lat[-5:]
+
+
+# --- test QR codes for the phone app -----------------------------------------------------
+
+@pytest.mark.parametrize("name", ["shop", "qr", "fake_collect", "mule", "phishing"])
+def test_demo_qr_codes_are_served(api, name):
+    r = api.get(f"/api/v1/demo/qr/{name}.svg")
+    assert r.status_code == 200 and r.headers["content-type"].startswith("image/svg")
+
+
+def test_an_unknown_demo_qr_is_refused(api):
+    assert api.get("/api/v1/demo/qr/nope.svg").status_code == 422
+
+
+def test_a_demo_upi_qr_holds_a_simulated_id_and_the_scam_note(api):
+    from urllib.parse import parse_qs, urlparse
+
+    from app import main
+    text = main._demo_qr_text(main.get_live(), "qr")
+    assert text.startswith("upi://pay?")
+    q = parse_qs(urlparse(text).query)
+    assert q["pa"][0].split("@")[1].startswith("sim") and q["tn"] == ["scan to receive"] and float(q["am"][0]) > 0
+
+
+def test_a_scanned_real_id_is_accepted_and_a_scam_note_still_stops_it(api):
+    r = api.post("/api/v1/score", json=body(payee="someone.new@oksbi", amount=5000, kind="QR", note="scan to receive"))
+    assert r.status_code == 200 and r.json()["stopped"]

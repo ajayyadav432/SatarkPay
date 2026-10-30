@@ -317,7 +317,7 @@ ml/satarkai/    SatarkAI's text and URL models, unchanged
 models/         xgb, iforest, bundle, metrics.json
 scripts/        loadtest
 tests/          unit, parity, API, security, acceptance R1-R10, browser
-android/        SatarkAI SMS Guard, unchanged
+android/        Phone app: SatarkAI SMS Guard, plus UPI QR scanning added later
 extension/      SatarkAI Link Guard, unchanged
 demo/           SatarkAI's demo pages with fake scam links, unchanged
 docs/           DEMO_SCRIPT.md, JUDGING_QA.md, REUSED_FROM_SATARKAI.md, reused_manifest.json, SatarkPay_Pitch.pptx
@@ -476,3 +476,4 @@ Every finding that changes the design goes here, with its evidence.
 - **30 Oct 2026.** `models/satarkai/` was moved to `ml/satarkai/` from outside the build session and `docs/` was removed. The
   move was kept and the config points there. Without its models the engine still answers, only worse (Critical 90 became
   High 78), and its copied tests skip silently. A new test fails loudly in that case, and training refuses to start.
+- **30 Oct 2026.** The reused Android app could not scan or check a UPI payment, which is the point of the problem statement. Added QR scanning with CameraX and ML Kit. Seven reused files changed and left the manifest. A real UPI ID has no history here, so the app hides model reasons for it and never says it is safe.

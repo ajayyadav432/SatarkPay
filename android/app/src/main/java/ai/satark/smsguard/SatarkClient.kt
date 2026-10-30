@@ -3,6 +3,7 @@ package ai.satark.smsguard
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
 
 /** Talks to the SatarkAI app on the laptop. Runs on a background thread, never on the UI thread. */
 object SatarkClient {
@@ -19,6 +20,27 @@ object SatarkClient {
     /** True when the laptop answers. Used by the "Test connection" button. */
     fun health(server: String): Boolean =
         request("$server/api/health", "GET", null, null).optString("status") == "ok"
+
+    /** The simulated account that is paying, with its usual phone and city, so that it looks like its owner to the model. */
+    private fun demoAccount(server: String): JSONObject = request("$server/api/v1/demo", "GET", null, null).getJSONObject("me")
+
+    /** Scores one payment before it goes through. */
+    fun scorePayment(server: String, payee: String, amount: Double, kind: String, note: String): JSONObject {
+        val me = demoAccount(server)
+        val body = JSONObject().put("payer", me.getString("vpa")).put("payee", payee).put("amount", amount).put("kind", kind)
+            .put("device", me.getString("device")).put("city", me.getInt("city")).put("balance", me.getDouble("balance")).put("note", note)
+        return request("$server/api/v1/score", "POST", null, body.toString())
+    }
+
+    /** What the person did after seeing the result. */
+    fun outcome(server: String, txnId: String, token: String, decision: String): JSONObject {
+        val body = JSONObject().put("txn_id", txnId).put("token", token).put("decision", decision)
+        return request("$server/api/v1/outcome", "POST", null, body.toString())
+    }
+
+    /** Checks a web link. */
+    fun checkUrl(server: String, url: String): JSONObject =
+        request("$server/api/check-url?u=" + URLEncoder.encode(url, "UTF-8"), "GET", null, null)
 
     private fun request(url: String, method: String, code: String?, body: String?): JSONObject {
         val conn = URL(url).openConnection() as HttpURLConnection
