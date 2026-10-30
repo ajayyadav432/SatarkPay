@@ -276,7 +276,7 @@ def test_nothing_scrolls_sideways_on_a_phone(phone, base, path, problems):
     assert not problems, problems
 
 
-def test_the_warning_page_from_satarkai_still_works(desktop, base, problems):
+def test_the_warning_page_still_works(desktop, base, problems):
     desktop.goto(base + "/go?u=http://sbi-kyc-update.xyz/login")
     desktop.wait_for_selector("#go-actions a")
     assert "sbi-kyc-update[.]xyz" in desktop.inner_text("#go-url")
@@ -389,3 +389,39 @@ def test_a_user_cannot_open_the_dashboard(browser, base):
     page.wait_for_url(base + "/pay")
     assert ctx.request.get(base + "/api/v1/kpis").status == 403
     ctx.close()
+
+
+@pytest.mark.parametrize("role,home", [("user", "/pay"), ("merchant", "/merchant"), ("admin", "/")])
+def test_a_judge_can_open_each_portal_with_one_click(browser, base, role, home):
+    ctx = browser.new_context()
+    page = ctx.new_page()
+    page.goto(base + "/login")
+    page.click(f"[data-role={role}]")
+    page.wait_for_selector("#btn-test:visible")
+    page.click("#btn-test")
+    page.wait_for_url(base + home)
+    ctx.close()
+
+
+def test_a_new_person_can_sign_up_on_the_website(browser, base):
+    ctx = browser.new_context()
+    page = ctx.new_page()
+    page.goto(base + "/login")
+    page.click("#btn-switch")
+    page.fill("#fullname", "Test Person")
+    page.fill("#username", "e2e.person")
+    page.fill("#password", "long-enough-pass")
+    page.click("#btn-login")
+    page.wait_for_url(base + "/pay")
+    ctx.close()
+
+
+def test_there_is_no_admin_sign_up_on_the_website(browser, base):
+    ctx = browser.new_context()
+    page = ctx.new_page()
+    page.goto(base + "/login")
+    page.click("[data-role=admin]")
+    assert page.locator("#btn-switch").is_hidden()
+    assert "cannot be created" in page.inner_text("#switch-text")
+    ctx.close()
+

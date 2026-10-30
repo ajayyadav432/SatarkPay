@@ -1,5 +1,5 @@
-// SatarkAI Link Guard - background worker.
-// Asks the SatarkAI app running on this computer about links, pages and e-mails.
+// SatarkPay Link Guard - background worker.
+// Asks the SatarkPay app running on this computer about links, pages and e-mails.
 // Everything is sent only to 127.0.0.1 (this computer), never to the internet.
 const APP = "http://127.0.0.1:8000";
 const TIMEOUT_MS = 1500;
@@ -77,7 +77,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 function showOnOff(enabled) {
   chrome.action.setBadgeText({ text: enabled ? "" : "OFF" });
   chrome.action.setBadgeBackgroundColor({ color: enabled ? "#dc3545" : "#6b7280" });
-  chrome.action.setTitle({ title: "SatarkAI Link Guard: protection " + (enabled ? "on" : "off") });
+  chrome.action.setTitle({ title: "SatarkPay Link Guard: protection " + (enabled ? "on" : "off") });
 }
 chrome.storage.local.get({ enabled: true }, (v) => showOnOff(v.enabled !== false));
 chrome.storage.onChanged.addListener((changes, area) => {

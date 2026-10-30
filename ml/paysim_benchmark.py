@@ -3,7 +3,7 @@
     python -m ml.paysim_benchmark
 
 It cannot show fake collects or phishing links, because it has no notes, links or devices. It is here to answer one
-question: does the training recipe also hold up on someone else's data? We also check it for shortcuts, as SatarkAI did with
+question: does the training recipe also hold up on someone else's data? We also check it for shortcuts, as SatarkPay did with
 PhiUSIIL. Results are added to models/metrics.json. The data is downloaded to data/raw and never stored in the repo.
 """
 from __future__ import annotations

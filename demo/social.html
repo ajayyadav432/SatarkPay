@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chatter (demo) - fake social network for testing SatarkAI</title>
+<title>Chatter (demo) - fake social network for testing SatarkPay</title>
 <style>
   :root { --bg: #f0f2f5; --card: #fff; --ink: #1c1e21; --muted: #65676b; --line: #e4e6eb; --brand: #7c3aed; }
   * { box-sizing: border-box; }
@@ -46,7 +46,7 @@
 </style>
 </head>
 <body>
-<div class="demo-note">⚠ Demo page: a <b>fictional</b> social network with <b>fake scam posts</b> for testing SatarkAI. All names and offers are made up. Never enter real details.</div>
+<div class="demo-note">⚠ Demo page: a <b>fictional</b> social network with <b>fake scam posts</b> for testing SatarkPay. All names and offers are made up. Never enter real details.</div>
 <header>
   <div class="logo">chatter</div>
   <div class="search">🔍 Search Chatter</div>
@@ -162,11 +162,11 @@ Or join our Telegram: <a href="https://bit.ly/3kYcJob">https://bit.ly/3kYcJob</a
   </aside>
 </main>
 
-<div class="blocked" id="blocked">Demo page: this is a fake scam link, so it is blocked here. With the SatarkAI extension you see its warning page instead.</div>
+<div class="blocked" id="blocked">Demo page: this is a fake scam link, so it is blocked here. With the SatarkPay extension you see its warning page instead.</div>
 <script>
   // Safety net for people without the extension: never let a fake scam link from this page open.
-  // The SatarkAI extension handles clicks first (and stops this handler), so with it installed you
-  // see the SatarkAI warning page instead of this message.
+  // The SatarkPay extension handles clicks first (and stops this handler), so with it installed you
+  // see the SatarkPay warning page instead of this message.
   document.addEventListener("click", function (e) {
     var a = e.target.closest && e.target.closest("a[href]");
     if (!a || a.classList.contains("safe")) return;

@@ -42,7 +42,7 @@
     try {
       res = await fetch("/api/check-url?u=" + encodeURIComponent(raw));
       data = await res.json();
-    } catch (e) { fail("The SatarkAI server did not answer."); return; }
+    } catch (e) { fail("The SatarkPay server did not answer."); return; }
     if (!res.ok) { fail(typeof data.detail === "string" ? data.detail : "The link is not valid."); return; }
 
     $("go-url").textContent = data.display;

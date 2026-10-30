@@ -5,7 +5,7 @@ import android.content.Intent
 
 /**
  * Messages that arrived while the laptop could not be reached are stored as "Not checked".
- * As soon as SatarkAI answers again they are sent once more, so no SMS is lost.
+ * As soon as SatarkPay answers again they are sent once more, so no SMS is lost.
  */
 object Retry {
     private val lock = Any()

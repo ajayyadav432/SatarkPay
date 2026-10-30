@@ -5,7 +5,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 
-/** Talks to the SatarkAI app on the laptop. Runs on a background thread, never on the UI thread. */
+/** Talks to the SatarkPay app on the laptop. Runs on a background thread, never on the UI thread. */
 object SatarkClient {
     private const val TIMEOUT_MS = 8000
 
@@ -48,7 +48,7 @@ object SatarkClient {
 
     fun simRun(server: String, start: Boolean) { request("$server/api/v1/sim/" + if (start) "start" else "stop", "POST", null, "{}") }
 
-    /** Sends one SMS to /api/ingest and returns SatarkAI's verdict. Throws on network or server errors. */
+    /** Sends one SMS to /api/ingest and returns the engine's verdict. Throws on network or server errors. */
     fun checkSms(server: String, code: String, sender: String, text: String, ref: String): JSONObject {
         val body = JSONObject()
             .put("text", text.take(20000)).put("channel", "sms").put("sender", sender.take(320))
@@ -100,7 +100,7 @@ object SatarkClient {
             if (status !in 200..299) {
                 val detail = runCatching { JSONObject(text).optString("detail") }.getOrNull()
                 if (status == 401 && detail == "Please log in.") throw LoginNeeded(detail)
-                throw IllegalStateException(detail?.ifEmpty { null } ?: "SatarkAI answered $status")
+                throw IllegalStateException(detail?.ifEmpty { null } ?: "SatarkPay answered $status")
             }
             return JSONObject(text)
         } finally {

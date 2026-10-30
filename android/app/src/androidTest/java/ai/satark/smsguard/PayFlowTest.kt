@@ -9,7 +9,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import ai.satark.smsguard.theme.SatarkAISMSGuardTheme
+import ai.satark.smsguard.theme.SatarkPayTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,7 +45,7 @@ class PayFlowTest {
     @org.junit.After fun restoreHistory() { prefs.edit().putString("recent", savedRecent).apply() }
 
     @Composable private fun Themed(content: @Composable () -> Unit) {
-        SatarkAISMSGuardTheme { Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) { content() } }
+        SatarkPayTheme { Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) { content() } }
     }
 
     // The laptop's demo passwords are never in the repo: am instrument -e userPassword ... -e merchantPassword ... -e adminPassword ...

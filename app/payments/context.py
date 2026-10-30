@@ -1,6 +1,6 @@
 """Reads the words around a payment: note, link, UPI ID and recent SMS.
 
-The SatarkAI engine (app/analysis, unchanged) does the heavy lifting. This file adds payment knowledge the engine
+The context engine (app/analysis, unchanged) does the heavy lifting. This file adds payment knowledge the engine
 does not have, because it was built for messages. Measured on the engine alone: "Approve to get cashback Rs 750"
 and "scan to receive money" score Safe 0, and "paytm.cashback.offer@okaxis" scores Safe 0.
 """
@@ -88,7 +88,7 @@ def link_signal(url: str) -> dict:
 
 @lru_cache(maxsize=100_000)
 def vpa_signal(vpa: str) -> dict:
-    """Does a UPI ID imitate a brand or use scam words? Uses SatarkAI's brand list. Verified merchants are exempt (see features)."""
+    """Does a UPI ID imitate a brand or use scam words? Uses the engine's brand list. Verified merchants are exempt (see features)."""
     local = (vpa or "").split("@")[0].lower()
     if not local:
         return {"score": 0, "brand": None, "words": []}
@@ -120,7 +120,7 @@ def vpa_signal(vpa: str) -> dict:
 
 @lru_cache(maxsize=50_000)
 def sms_signal(text: str, sender: str) -> dict:
-    """What the SatarkAI engine thinks of a message the user just received."""
+    """What the context engine thinks of a message the user just received."""
     r = analyze(text or "", channel="sms", sender=sender or None)
     top = r["factors"][0]["title"] if r["factors"] else None
     return {"score": int(r["score"]), "level": r["level"], "category": r["category"], "reason": top,

@@ -25,7 +25,7 @@ def seen(store, *txns):
 def test_the_reused_engine_models_are_really_loaded():
     """The engine still answers without its models, only worse, and its own tests then skip. This must fail loudly."""
     from app.analysis import models
-    assert all(models.status().values()), f"SatarkAI models not found in {models.config.MODELS_DIR}"
+    assert all(models.status().values()), f"SatarkPay models not found in {models.config.MODELS_DIR}"
     assert link_signal("http://sbi-kyc-update.xyz/pay?pa=refund@ybl&am=2999")["score"] == 90, "the URL model did not run"
 
 
@@ -168,7 +168,7 @@ def test_time_of_day_is_indian_time():
     assert hour_of(1_790_000_000.0 - 1_790_000_000.0 % 86400 - 19800) == 0
 
 
-# --- context layer: the gaps measured in SatarkAI ------------------------------------
+# --- context layer: gaps measured in the engine ------------------------------------
 
 @pytest.mark.parametrize("note", ["Refund of Rs 2999 approve to receive", "Approve to get cashback Rs 750", "Enter UPI PIN to receive Rs 5000",
                                   "Aapka refund 1499 approve karein", "scan to receive money", "Scan karo paise milenge",
@@ -223,7 +223,7 @@ def test_a_verified_merchant_is_exempt_from_the_name_check():
     assert FeatureStore().features_for(pay(payee="sbi.card@simsbi"))["vpa_risk"] > 0
 
 
-def test_links_use_the_satarkai_engine():
+def test_links_use_the_context_engine():
     assert link_signal("http://sbi-kyc-update.xyz/pay?pa=refund@ybl&am=2999")["score"] >= 80
     irctc = link_signal("https://www.irctc.co.in/nget/payment")
     assert irctc["score"] == 0 and irctc["official"]

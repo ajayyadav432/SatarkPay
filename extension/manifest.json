@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "SatarkAI Link Guard",
+  "name": "SatarkPay Link Guard",
   "version": "1.2.0",
-  "description": "Checks every page, link and Gmail e-mail with the local SatarkAI app, and warns before anything risky.",
+  "description": "Checks every page, link and Gmail e-mail with the local SatarkPay app, and warns before anything risky.",
   "permissions": [
     "storage"
   ],
@@ -42,7 +42,7 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "SatarkAI Link Guard",
+    "default_title": "SatarkPay Link Guard",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",

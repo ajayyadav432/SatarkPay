@@ -1,8 +1,8 @@
-// SatarkAI Link Guard - runs on every page.
+// SatarkPay Link Guard - runs on every page.
 // 1. When a page loads, its address is checked. A risky page gets a warning bar at the top.
 // 2. Links to other sites on the page are checked; risky ones get a small red badge.
 // 3. When you click a link to another site, it is checked first; risky links open the warning page.
-// If the SatarkAI app is not running, nothing is blocked and nothing is shown.
+// If the SatarkPay app is not running, nothing is blocked and nothing is shown.
 // The switch in the extension popup turns all of this off and on (stored as "enabled").
 (function () {
   "use strict";
@@ -14,7 +14,7 @@
   });
   /** Set several style properties (CSSOM, so page security policies do not block it). */
   const css = (el, props) => { for (const [k, v] of Object.entries(props)) el.style.setProperty(k, v, "important"); return el; };
-  const isSatarkApp = LOCAL.has(location.hostname) && location.port === "8000";   // the SatarkAI app itself
+  const isSatarkApp = LOCAL.has(location.hostname) && location.port === "8000";   // the SatarkPay app itself
   const topFrame = window.top === window;
 
   let enabled = true;
@@ -39,7 +39,7 @@
     try { url = new URL(link.href, window.location.href); } catch (e) { return; }
     if (url.protocol !== "http:" && url.protocol !== "https:") return;
     if (url.hostname === window.location.hostname) return;      // links inside the same site are not checked
-    if (LOCAL.has(url.hostname)) return;                         // the SatarkAI app itself
+    if (LOCAL.has(url.hostname)) return;                         // the SatarkPay app itself
 
     const newTab = link.target === "_blank" || event.ctrlKey || event.metaKey || event.shiftKey;
     event.preventDefault();
@@ -68,7 +68,7 @@
     bar.setAttribute("role", "alert");
     const text = document.createElement("span");
     css(text, { flex: "1" });
-    text.textContent = "⚠ SatarkAI: this website looks dangerous (" + r.level + ", " + r.score + "/100)" +
+    text.textContent = "⚠ SatarkPay: this website looks dangerous (" + r.level + ", " + r.score + "/100)" +
       (r.reason ? " — " + r.reason : "") + ". Do not enter passwords, OTPs or card details.";
     const close = document.createElement("button");
     close.type = "button";
@@ -88,7 +88,7 @@
     const b = document.createElement("span");
     b.dataset.satarkBadge = "";
     b.textContent = "⚠ " + r.level;
-    b.title = "SatarkAI: " + r.level + " risk (" + r.score + "/100)" + (r.reason ? ". " + r.reason : "");
+    b.title = "SatarkPay: " + r.level + " risk (" + r.score + "/100)" + (r.reason ? ". " + r.reason : "");
     css(b, { display: "inline-block", "margin-left": "4px", padding: "0 6px", "border-radius": "999px", background: COLORS[r.level] || COLORS.Critical,
       color: "#fff", font: "700 11px/18px system-ui, sans-serif", "vertical-align": "middle", "white-space": "nowrap", cursor: "help" });
     link.after(b);
@@ -163,7 +163,7 @@
     return false;
   });
 
-  if (isSatarkApp || !topFrame) return;   // no bar or badges on the SatarkAI app or inside frames
+  if (isSatarkApp || !topFrame) return;   // no bar or badges on the SatarkPay app or inside frames
 
   let timer = null;
   const scheduleScan = () => { clearTimeout(timer); timer = setTimeout(scanLinks, 600); };

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Read incoming SMS, send them to SatarkAI on the laptop, and show a warning. -->
+    <!-- Read incoming SMS, send them to SatarkPay on the laptop, and show a warning. -->
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -18,7 +18,7 @@
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
         android:windowSoftInputMode="adjustResize"
-        android:theme="@style/Theme.SatarkAISMSGuard">
+        android:theme="@style/Theme.SatarkPay">
         <activity
             android:name=".MainActivity"
             android:exported="true">

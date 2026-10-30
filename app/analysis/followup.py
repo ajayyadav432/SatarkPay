@@ -1,7 +1,7 @@
 """Evidence from the sender's earlier messages.
 
 A scammer may send a phishing link in one message and, later, a harmless-looking follow-up such as
-"Please open the link I sent you". On its own the follow-up has nothing suspicious in it. SatarkAI
+"Please open the link I sent you". On its own the follow-up has nothing suspicious in it. SatarkPay
 therefore looks at the same sender's last risky messages (History, the last HISTORY_LIMIT) and adds:
 
 - repeat_sender: the sender already sent risky messages (weight 0.30 for one, 0.38 for two, 0.45 for three or more)

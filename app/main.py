@@ -6,6 +6,7 @@ import hmac
 import io
 import ipaddress
 import json
+import os
 import re
 import socket
 import time
@@ -68,6 +69,9 @@ def _host_allowed(host: str | None) -> bool:
     name = name.split("]")[0].lstrip("[")
     if name == "localhost":
         return True
+    # A public deployment answers on its own address only. Vercel sets these; SATARK_PUBLIC_HOST covers anything else.
+    if name in {os.environ.get(k) for k in ("VERCEL_URL", "VERCEL_PROJECT_PRODUCTION_URL", "VERCEL_BRANCH_URL", "SATARK_PUBLIC_HOST")} - {None}:
+        return True
     try:
         ipaddress.ip_address(name)
         return True
@@ -110,6 +114,16 @@ class LoginIn(BaseModel):
     role: Literal["user", "merchant", "admin"]
     username: str = Field(max_length=40)
     password: str = Field(max_length=200)
+
+
+class SignUpIn(LoginIn):
+    name: str = Field(max_length=60)
+
+
+class TestLoginIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    role: Literal["user", "merchant", "admin"]
 
 
 # --- request bodies ------------------------------------------------------------------
@@ -177,7 +191,7 @@ class SpeedIn(BaseModel):
 
 
 class IngestIn(BaseModel):
-    """The exact request of the reused SatarkAI Android app and browser extension."""
+    """The exact request of the reused SatarkPay Android app and browser extension."""
     model_config = ConfigDict(extra="forbid")
 
     text: str = Field(min_length=1, max_length=config.MAX_TEXT_CHARS)
@@ -247,17 +261,32 @@ def page_go():
 
 # --- login ---------------------------------------------------------------------------
 
-def _account_view(role: str) -> dict:
-    account = auth.ACCOUNTS[role]
-    return {"role": role, "username": account["username"], "name": account["name"], "home": account["home"]}
+def _home(role: str, token: str, request: Request, response: Response) -> dict:
+    """A browser gets a cookie that scripts cannot read. The phone app sends the returned token as a Bearer header."""
+    secure = request.headers.get("x-forwarded-proto", request.url.scheme) == "https"
+    response.set_cookie(auth.COOKIE, token, max_age=auth.SESSION_SECONDS, httponly=True, samesite="strict", secure=secure, path="/")
+    session = auth._read(token)
+    return {"role": role, "username": session["u"], "name": session["n"], "home": auth.ACCOUNTS[role]["home"], "token": token}
 
 
 @app.post("/api/v1/auth/login")
-def api_login(body: LoginIn, response: Response):
-    """A browser gets a cookie that scripts cannot read. The phone app sends the returned token as a Bearer header."""
-    token = auth.login(body.role, body.username, body.password)
-    response.set_cookie(auth.COOKIE, token, max_age=auth.SESSION_SECONDS, httponly=True, samesite="strict", path="/")
-    return {**_account_view(body.role), "token": token}
+def api_login(body: LoginIn, request: Request, response: Response):
+    return _home(body.role, auth.login(body.role, body.username, body.password), request, response)
+
+
+@app.post("/api/v1/auth/signup")
+def api_signup(body: SignUpIn, request: Request, response: Response):
+    return _home(body.role, auth.sign_up(body.role, body.username, body.password, body.name), request, response)
+
+
+@app.post("/api/v1/auth/test-login")
+def api_test_login(body: TestLoginIn, request: Request, response: Response):
+    return _home(body.role, auth.test_login(body.role), request, response)
+
+
+@app.get("/api/v1/auth/options")
+def api_auth_options():
+    return {"test_logins": auth.test_logins_on(), "sign_up_roles": list(auth.SIGN_UP_ROLES)}
 
 
 @app.post("/api/v1/auth/logout")
@@ -268,8 +297,9 @@ def api_logout(request: Request, response: Response):
 
 
 @app.get("/api/v1/auth/me")
-def api_me(role: str = ANYONE_LOGGED_IN):
-    return _account_view(role)
+def api_me(request: Request, role: str = ANYONE_LOGGED_IN):
+    session = auth.session_of(request)
+    return {"role": role, "username": session["u"], "name": session["n"], "home": auth.ACCOUNTS[role]["home"]}
 
 
 def _persona_vpas() -> set[str]:
@@ -413,10 +443,12 @@ def api_feed(limit: int = Query(default=50, ge=1, le=200), _: str = ADMIN, engin
 
 
 @app.get("/api/v1/merchant/payments")
-def api_merchant_payments(_: str = Depends(auth.require("merchant", "admin")), engine: Live = Depends(get_live)):
+def api_merchant_payments(request: Request, _: str = Depends(auth.require("merchant", "admin")), engine: Live = Depends(get_live)):
     """The shop's own payments, newest first. What really arrived is what counts, not a customer's screen."""
     totals = engine.shop_totals
-    return {"shop": engine.persona_shop(), "name": auth.ACCOUNTS["merchant"]["name"], "received_total": round(totals["received_total"], 2), "received": totals["received"],
+    session = auth.session_of(request)
+    name = session["n"] if session["r"] == "merchant" else auth.ACCOUNTS["merchant"]["name"]
+    return {"shop": engine.persona_shop(), "name": name, "received_total": round(totals["received_total"], 2), "received": totals["received"],
             "not_received": totals["not_received"], "rows": [{k: r[k] for k in ("txn_id", "time", "payer", "amount", "status", "action")} for r in reversed(list(engine.shop_rows)[-50:])]}
 
 
@@ -520,7 +552,7 @@ def api_join_svg(_: str = ADMIN):
     return Response(buf.getvalue(), media_type="image/svg+xml")
 
 
-# --- compatibility with the reused SatarkAI Android app and browser extension -----------
+# --- compatibility with the reused SatarkPay Android app and browser extension -----------
 
 _seen_ingest: dict[str, dict] = {}
 MAX_SEEN_INGEST = 2000
@@ -540,7 +572,7 @@ def health():
 def api_ingest(body: IngestIn, request: Request, engine: Live = Depends(get_live)):
     """An SMS that arrived on the phone with SMS Guard. It is judged, and remembered as context for the phone's user.
     From another device the pairing code (header X-Satark-Token) is required."""
-    if not is_local(request) and not _ingest_token_ok(request.headers.get("x-satark-token")):
+    if not auth.role_of(request) and not is_local(request) and not _ingest_token_ok(request.headers.get("x-satark-token")):
         raise HTTPException(status_code=401, detail="Wrong or missing pairing code.")
     if not body.text.strip():
         raise HTTPException(status_code=422, detail="text must not be empty")

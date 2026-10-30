@@ -7,7 +7,7 @@ import android.provider.Telephony
 import android.util.Log
 
 /**
- * Called by Android for every incoming SMS. The text is sent to SatarkAI on the laptop and the
+ * Called by Android for every incoming SMS. The text is sent to SatarkPay on the laptop and the
  * verdict is shown as a notification. Nothing is sent anywhere else.
  */
 class SmsReceiver : BroadcastReceiver() {

@@ -20,12 +20,19 @@
         <button type="button" role="tab" class="login-role" data-role="admin">Admin</button>
       </div>
       <p class="small muted" id="role-note"></p>
+      <div class="login-test hidden" id="test-box">
+        <button class="btn btn-primary login-go" id="btn-test" type="button"></button>
+        <p class="small muted">No password needed. Simulated data only.</p>
+        <p class="login-or small muted">or use an account</p>
+      </div>
       <form id="login-form" autocomplete="off">
+        <label class="field login-field hidden" id="name-box"><span id="name-label">Your name</span><input id="fullname" maxlength="60" autocomplete="name"></label>
         <label class="field login-field">Username<input id="username" required maxlength="40" autocapitalize="none" autocomplete="username"></label>
         <label class="field login-field">Password<input id="password" type="password" required maxlength="200" autocomplete="current-password"></label>
         <p class="error hidden" id="login-error" role="alert"></p>
-        <button class="btn btn-primary login-go" id="btn-login" type="submit">Log in</button>
+        <button class="btn login-go" id="btn-login" type="submit">Log in</button>
       </form>
+      <p class="small login-switch"><span id="switch-text"></span> <button type="button" class="linkish" id="btn-switch"></button></p>
     </section>
   </main>
   <script src="/static/common.js"></script>

@@ -347,7 +347,7 @@ td.right, th.right { text-align: right; font-variant-numeric: tabular-nums; }
 details.table-view { margin-top: 8px; font-size: 13px; }
 details.table-view summary { cursor: pointer; color: var(--muted); font-weight: 600; }
 
-/* The warning page reused from SatarkAI ----------------------------------------------------------------- */
+/* The warning page reused from SatarkPay ----------------------------------------------------------------- */
 .go-wrap { max-width: 640px; margin: 0 auto; padding: 32px 16px; display: grid; gap: 12px; }
 .go-card { display: grid; gap: 10px; }
 .go-card h1 { font-size: 22px; }
@@ -373,3 +373,7 @@ details.table-view summary { cursor: pointer; color: var(--muted); font-weight: 
 .login-field .input { display: block; width: 100%; margin-top: 4px; }
 .login-go { width: 100%; margin-top: 16px; }
 .account { display: flex; align-items: center; }
+.login-test { margin-top: 12px; }
+.login-or { text-align: center; margin: 12px 0 0; }
+.login-switch { margin: 12px 0 0; text-align: center; }
+.linkish { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; }

@@ -1,4 +1,4 @@
-"""Hard rules: plain facts that do not need a model. Each has a weight, like SatarkAI's evidence items.
+"""Hard rules: plain facts that do not need a model. Each has a weight, like the engine's evidence items.
 
 Rules take plain numbers, so the same function runs per payment when live and over a whole table when evaluating.
 """

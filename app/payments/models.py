@@ -2,8 +2,8 @@
 
     risk = 1 - (1 - p) x (1 - a) x (1 - r1) x (1 - r2) ...
 
-p is XGBoost's fraud probability, a comes from the Isolation Forest, r are hard rules. It is the same formula as
-SatarkAI: more evidence never lowers the risk. The risk is then placed on the 0-100 scale using bands measured on
+p is XGBoost's fraud probability, a comes from the Isolation Forest, r are hard rules. It is the formula
+SatarkPay: more evidence never lowers the risk. The risk is then placed on the 0-100 scale using bands measured on
 validation data, so a level has a known meaning: "High" is about the top 0.2% of genuine payments.
 """
 from __future__ import annotations

@@ -11,6 +11,6 @@ private val Scheme = darkColorScheme(
 
 /** One fixed look, so the app is the same on every phone at the demo. */
 @Composable
-fun SatarkAISMSGuardTheme(content: @Composable () -> Unit) {
+fun SatarkPayTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = Scheme, typography = Typography, content = content)
 }

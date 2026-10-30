@@ -38,7 +38,7 @@ case "${1:-serve}" in
     ;;
   wifi)
     "$PY" -m app.auth
-    # The pairing code lets the SatarkAI SMS Guard app talk to this laptop. It stays in .env, which is never committed.
+    # The pairing code lets the SatarkPay app talk to this laptop. It stays in .env, which is never committed.
     if ! grep -qs "^SATARK_TOKEN=" .env; then
       echo "SATARK_TOKEN=$("$PY" -c "import secrets; print(secrets.token_urlsafe(9))")" >> .env
     fi

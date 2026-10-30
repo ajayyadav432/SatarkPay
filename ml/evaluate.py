@@ -128,7 +128,7 @@ def layer_table(train, val, test, forest, medians, quantiles) -> list[dict]:
     y, amount = test["label"].to_numpy(), test["amount_raw"].to_numpy()
     rows = []
     steps = [("Payer behaviour only", PAYER), ("+ the account's own money moves", PAYER + MOVER), ("+ payee signals (mules)", PAYER + MOVER + PAYEE),
-             ("+ SatarkAI context (note, link, UPI ID, SMS)", FEATURES)]
+             ("+ Context engine (note, link, UPI ID, SMS)", FEATURES)]
     full_p = None
     for name, feats in steps:
         booster = fit_xgb(train, val, features=feats)

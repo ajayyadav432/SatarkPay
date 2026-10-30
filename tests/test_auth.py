@@ -50,11 +50,98 @@ def test_an_unknown_role_is_refused():
     assert _client().post("/api/v1/auth/login", json={"role": "root", "username": "a", "password": "b"}).status_code == 422
 
 
+def _signup(c, **kw):
+    return c.post("/api/v1/auth/signup", json={"role": "user", "username": "new.person", "password": "long-enough", "name": "New Person", **kw})
+
+
+def test_sign_up_then_log_in_and_stay_in_your_portal():
+    c = _client()
+    name = "u" + __import__("secrets").token_hex(4)
+    r = _signup(c, username=name)
+    assert r.status_code == 200 and r.json()["home"] == "/pay"
+    assert c.get("/api/v1/auth/me").json()["name"] == "New Person"
+    assert c.get("/api/v1/kpis").status_code == 403
+    assert _signup(_client(), username=name).status_code == 409, "a username can be taken only once"
+    login = _client().post("/api/v1/auth/login", json={"role": "user", "username": name, "password": "long-enough"})
+    assert login.status_code == 200
+    assert _client().post("/api/v1/auth/login", json={"role": "user", "username": name, "password": "wrong-one"}).status_code == 401
+
+
+def test_a_merchant_sign_up_keeps_its_shop_name():
+    c = _client()
+    name = "m" + __import__("secrets").token_hex(4)
+    assert _signup(c, role="merchant", username=name, name="Asha Stores").json()["home"] == "/merchant"
+    assert c.get("/api/v1/merchant/payments").json()["name"] == "Asha Stores"
+
+
+def test_nobody_can_sign_up_as_admin():
+    r = _signup(_client(), role="admin", username="evil.admin")
+    assert r.status_code == 403
+    assert _client().post("/api/v1/auth/login", json={"role": "admin", "username": "evil.admin", "password": "long-enough"}).status_code == 401
+
+
+def test_demo_usernames_cannot_be_taken_by_sign_up():
+    assert _signup(_client(), username="sunita").status_code == 409
+    assert _signup(_client(), role="merchant", username="ramesh").status_code == 409
+
+
+@pytest.mark.parametrize("bad", [{"username": "a"}, {"username": "has space"}, {"password": "short"}, {"name": " "}])
+def test_bad_sign_ups_are_refused(bad):
+    assert _signup(_client(), **bad).status_code == 422
+
+
+@pytest.mark.parametrize("role,home", [("user", "/pay"), ("merchant", "/merchant"), ("admin", "/")])
+def test_test_login_opens_each_portal_with_one_click(role, home):
+    c = _client()
+    r = c.post("/api/v1/auth/test-login", json={"role": role})
+    assert r.status_code == 200 and r.json()["home"] == home
+    assert c.get("/api/v1/auth/me").json()["role"] == role
+
+
+def test_test_logins_can_be_switched_off(monkeypatch):
+    monkeypatch.setenv("SATARKPAY_TEST_LOGINS", "0")
+    assert _client().post("/api/v1/auth/test-login", json={"role": "admin"}).status_code == 403
+    assert _client().get("/api/v1/auth/options").json()["test_logins"] is False
+
+
+def test_a_tampered_session_is_refused():
+    token = _client().post("/api/v1/auth/test-login", json={"role": "user"}).json()["token"]
+    import base64
+    import json
+    body, signature = token.split(".")
+    forged = base64.urlsafe_b64encode(json.dumps({**json.loads(base64.urlsafe_b64decode(body)), "r": "admin"}).encode()).decode()
+    assert _client().get("/api/v1/kpis", headers={"Authorization": f"Bearer {forged}.{signature}"}).status_code == 401
+    assert _client().get("/api/v1/auth/me", headers={"Authorization": "Bearer not.a.token"}).status_code == 401
+
+
+def test_a_session_survives_a_restart_when_the_secret_is_set(monkeypatch):
+    monkeypatch.setenv("SATARK_SESSION_SECRET", "fixed-for-this-test")
+    token = auth.test_login("user")
+    auth._ended.clear()
+    assert auth._read(token)["r"] == "user"
+    monkeypatch.setenv("SATARK_SESSION_SECRET", "another-secret")
+    assert auth._read(token) is None
+
+
+def test_a_vercel_address_is_allowed_only_when_it_is_ours(monkeypatch):
+    from app.main import _host_allowed
+    assert not _host_allowed("satarkpay.vercel.app")
+    monkeypatch.setenv("VERCEL_PROJECT_PRODUCTION_URL", "satarkpay.vercel.app")
+    assert _host_allowed("satarkpay.vercel.app") and not _host_allowed("evil.vercel.app")
+
+
 def test_too_many_wrong_tries_lock_even_the_right_password():
     c = _client()
     for _ in range(auth.MAX_FAILS):
         assert c.post("/api/v1/auth/login", json={"role": "admin", "username": "admin", "password": "no"}).status_code == 401
     assert c.post("/api/v1/auth/login", json={"role": "admin", "username": "admin", "password": TEST_PASSWORD}).status_code == 429
+
+
+def test_wrong_tries_on_one_account_do_not_lock_another():
+    c = _client()
+    for _ in range(auth.MAX_FAILS):
+        c.post("/api/v1/auth/login", json={"role": "user", "username": "nobody.here", "password": "no"})
+    assert c.post("/api/v1/auth/login", json={"role": "user", "username": "sunita", "password": TEST_PASSWORD}).status_code == 200
 
 
 def test_the_browser_cookie_cannot_be_read_by_scripts():

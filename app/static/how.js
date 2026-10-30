@@ -44,7 +44,7 @@
 
     parts.push(card("How the decision is made",
       h("div", { class: "formula", text: "risk = 1 - (1 - XGBoost) x (1 - Isolation Forest) x (1 - rule 1) x (1 - rule 2) ..." }),
-      h("p", { text: "More evidence never lowers the risk. It is the same formula as SatarkAI. The risk is then placed on a 0 to 100 scale using bands measured on validation data." }),
+      h("p", { text: "More evidence never lowers the risk. The risk is then placed on a 0 to 100 scale using bands measured on validation data." }),
       table(["Score", "Level", "Decision", "Set so that, on genuine validation payments, no more than"], [
         ["40+", "Medium", "Warn: the person sees why and can continue after a pause", percent(m.policy.budgets.medium, 1) + " reach it"],
         ["60+", "High", "Hold, if the amount is ₹200 or more", percent(m.policy.budgets.high, 1) + " reach it"],

@@ -52,7 +52,7 @@ class Store(context: Context) {
     }
 }
 
-/** One checked SMS. level is null when SatarkAI could not be reached.
+/** One checked SMS. level is null when SatarkPay could not be reached.
  *  ownLevel / ownScore: the message's own result, set only when the sender's earlier messages raised the score. */
 data class Checked(
     val time: Long, val sender: String, val text: String,

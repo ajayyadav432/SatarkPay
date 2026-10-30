@@ -2,7 +2,7 @@
 
 Reasons are not guessed afterwards. XGBoost's exact TreeSHAP values are added up per reason group, the groups are
 ranked by that real weight, and each sentence is filled with the real numbers of this payment. Hard rules and the
-SatarkAI engine add their own reasons. No language model is involved, so nothing can be invented.
+SatarkPay engine add their own reasons. No language model is involved, so nothing can be invented.
 """
 from __future__ import annotations
 

@@ -23,9 +23,9 @@ import pytest  # noqa: E402
 
 from app.analysis import models  # noqa: E402
 
-# The engine tests copied from SatarkAI read these names from here.
+# The engine tests copied from SatarkPay read these names from here.
 MODELS_READY = all(models.status().values())
-needs_models = pytest.mark.skipif(not MODELS_READY, reason="SatarkAI models missing in models/satarkai")
+needs_models = pytest.mark.skipif(not MODELS_READY, reason="SatarkPay models missing in ml/engine")
 
 SCAM_KYC = "Dear customer, your SBI account will be blocked today. Update your KYC immediately: http://sbi-kyc-update.xyz/login"
 SCAM_BILL = ("Dear Consumer, your electricity power will be disconnected tonight at 9.30 pm because your previous month "
@@ -44,8 +44,8 @@ OK_ORDER = "Your Amazon order #402-1234567 has been shipped and will arrive tomo
 
 @pytest.fixture()
 def client():
-    """Only SatarkAI's own /api/model-card test asks for this; that page is not part of SatarkPay."""
-    pytest.skip("SatarkAI's model-card page is not part of SatarkPay")
+    """Only the engine's own /api/model-card test asks for this; that page is not part of SatarkPay."""
+    pytest.skip("the engine's model-card page is not part of SatarkPay")
 
 
 @pytest.fixture(scope="session")

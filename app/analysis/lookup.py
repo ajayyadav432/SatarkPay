@@ -61,7 +61,7 @@ def domain_age(domain: str) -> dict:
         return {"ok": False, "error": "Domain name is not valid for an RDAP query"}
     try:
         with httpx.Client(timeout=RDAP_TIMEOUT, follow_redirects=True, max_redirects=4,
-                          headers={"Accept": "application/rdap+json", "User-Agent": "satarkai/1.0"}) as client:
+                          headers={"Accept": "application/rdap+json", "User-Agent": "satarkpay/1.0"}) as client:
             resp = client.get(RDAP_URL.format(domain=domain))
     except httpx.HTTPError as exc:
         return {"ok": False, "error": f"RDAP service not reachable ({type(exc).__name__})"}

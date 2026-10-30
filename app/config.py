@@ -10,8 +10,8 @@ ROOT = Path(__file__).resolve().parent.parent
 APP_DIR = ROOT / "app"
 STATIC_DIR = APP_DIR / "static"
 DATA_DIR = ROOT / "data"
-MODELS_DIR = ROOT / "ml" / "satarkai"          # the reused SatarkAI text and URL models, unchanged
-KNOWLEDGE_DIR = APP_DIR / "data"               # the reused SatarkAI rules and brand lists, unchanged
+MODELS_DIR = ROOT / "ml" / "engine"          # the reused SatarkPay text and URL models, unchanged
+KNOWLEDGE_DIR = APP_DIR / "data"               # the reused SatarkPay rules and brand lists, unchanged
 
 PAY_MODELS_DIR = ROOT / "models"               # SatarkPay's own models and metrics.json
 XGB_FILE = PAY_MODELS_DIR / "xgb.ubj"
@@ -52,7 +52,7 @@ MAX_URL_CHARS = 2_048
 MAX_NOTE_CHARS = 200
 MAX_VPA_CHARS = 120
 
-# Risk levels: (name, lowest score in the level). The same five levels as SatarkAI.
+# Risk levels: (name, lowest score in the level). The same five levels as the engine.
 RISK_LEVELS = [
     ("Safe", 0),
     ("Low", 20),
@@ -63,7 +63,7 @@ RISK_LEVELS = [
 
 CHANNELS = ["sms", "email", "social", "url"]
 
-# SatarkAI's warning page asks for confirmation from this level upwards (kept for the reused extension).
+# the engine's warning page asks for confirmation from this level upwards (kept for the reused extension).
 WARN_FROM_LEVEL = "Medium"
 
 # Reported UPI fraud, used only for the real-world correction on the model card.

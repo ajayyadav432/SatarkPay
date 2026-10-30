@@ -13,6 +13,13 @@ _lock = threading.Lock()
 _conn: sqlite3.Connection | None = None
 
 SCHEMA = """
+CREATE TABLE IF NOT EXISTS accounts (
+    role TEXT NOT NULL,
+    username TEXT NOT NULL,
+    password_hash TEXT NOT NULL,
+    name TEXT NOT NULL,
+    PRIMARY KEY (role, username)
+);
 CREATE TABLE IF NOT EXISTS alerts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     txn_id TEXT,
@@ -106,3 +113,17 @@ def labelled_counts() -> dict:
     with _lock:
         rows = _conn.execute("SELECT status, COUNT(*) AS n FROM alerts GROUP BY status").fetchall()
     return {r["status"]: r["n"] for r in rows}
+
+
+def add_account(role: str, username: str, password_hash: str, name: str) -> bool:
+    """False when the username is taken."""
+    with _lock:
+        cur = _conn.execute("INSERT OR IGNORE INTO accounts (role, username, password_hash, name) VALUES (?, ?, ?, ?)", (role, username, password_hash, name))
+        _conn.commit()
+        return cur.rowcount == 1
+
+
+def get_account(role: str, username: str) -> dict | None:
+    with _lock:
+        row = _conn.execute("SELECT * FROM accounts WHERE role = ? AND username = ?", (role, username)).fetchone()
+    return dict(row) if row else None

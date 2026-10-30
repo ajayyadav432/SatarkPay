@@ -1,4 +1,4 @@
-// Popup of SatarkAI Link Guard: protection switch, app status, and what was found on the current page.
+// Popup of SatarkPay Link Guard: protection switch, app status, and what was found on the current page.
 // Text from pages is only ever inserted with textContent.
 (function () {
   "use strict";
@@ -28,8 +28,8 @@
     const box = $("app-status");
     fetch(APP + "/api/health", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then(() => { box.className = "status ok"; $("app-text").textContent = "Connected to SatarkAI on this computer"; })
-      .catch(() => { box.className = "status bad"; $("app-text").textContent = "SatarkAI app is not running. Start it with ./run.sh"; });
+      .then(() => { box.className = "status ok"; $("app-text").textContent = "Connected to SatarkPay on this computer"; })
+      .catch(() => { box.className = "status bad"; $("app-text").textContent = "SatarkPay app is not running. Start it with ./run.sh"; });
   }
 
   function showPage() {
@@ -44,7 +44,7 @@
         }
         body.replaceChildren();
         if (!s.enabled) { body.textContent = "Protection is off."; return; }
-        if (s.satarkApp) { body.textContent = "This is the SatarkAI app itself."; return; }
+        if (s.satarkApp) { body.textContent = "This is the SatarkPay app itself."; return; }
         const line = el("div");
         if (s.page) line.append(pill(s.page.level, s.page.score), el("span", "", s.page.level === "Safe" || s.page.level === "Low" ? "Website address looks fine" : "Risky website"));
         else line.append(el("span", "muted", s.local ? "Page on this computer (address not checked)" : "Website address not checked yet"));

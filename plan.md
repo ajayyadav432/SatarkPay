@@ -34,12 +34,12 @@ There is one automated acceptance test per requirement (`tests/test_acceptance.p
 
 ---
 
-## 2. What SatarkAI gives us (measured, 30 Oct 2026)
+## 2. What the earlier project gives us (measured, 30 Oct 2026)
 
 Checked on the local copy, which is the same commit as GitHub (`66b436a`). Its 340 non-browser tests
 pass here.
 
-| PS 3.2 needs | In SatarkAI? | Evidence |
+| PS 3.2 needs | In the earlier project? | Evidence |
 |---|---|---|
 | Transaction model | No | 0 files mention `isolation`, `xgboost`, `anomal`, `mule`, `kafka` |
 | Transaction scoring API | No | The API takes `text` and `sender` only. No amount, payee, device or history |
@@ -51,7 +51,7 @@ pass here.
 | False alarms on payment notes | Problem | Genuine note "electricity bill oct" scores Medium 40 |
 | Fake UPI IDs | Weak | `paytm.cashback.offer@okaxis` scores Safe 0: UPI IDs get no brand check |
 
-**Conclusion.** SatarkAI reads words. PS 3.2 is about money. We keep the engine as one input and build
+**Conclusion.** the earlier project reads words. PS 3.2 is about money. We keep the engine as one input and build
 everything transaction-related new. The engine's gaps above are not patched in the engine: a new layer
 handles them (`app/payments/context.py`), and the model learns when a note matters ("electricity" is fine
 when paid to a verified biller, not when paid to a 2-day-old stranger).
@@ -78,13 +78,13 @@ sees numbers, many of these look normal. So:
 
 | Decision | Choice | Why |
 |---|---|---|
-| Project | New repo `SatarkPay`, in this folder | Your choice. IGNITE repo stays untouched |
+| Project | New repo `SatarkPay`, in this folder | Your choice. an earlier hackathon repo stays untouched |
 | Reuse | Copy the engine unchanged, as well as the Android app and the extension | Your choice: "new repo with existing code" |
 | Model | **Both** XGBoost and Isolation Forest | XGBoost learns known scams and is exactly explainable. Isolation Forest needs no labels, for scams never seen |
 | Data | Our UPI simulator, plus PaySim as a public benchmark | PaySim has no notes, links, devices or collect requests, so it cannot show R1 or R2. The PS allows either |
 | Stream | Simple simulator behind a small `Bus` class, not Kafka | The PS allows it, and a stream simulator keeps the demo on one laptop with nothing else to install. Kafka is named as the production path and is **not** built or tested |
 | Explanations | Templates filled from SHAP values and real numbers, no LLM | Exact and repeatable, works offline, cannot invent a reason |
-| Front end | Plain HTML, CSS, JS, Chart.js stored locally. No build step | Same as SatarkAI, works with no internet on stage |
+| Front end | Plain HTML, CSS, JS, Chart.js stored locally. No build step | Same as the earlier project, works with no internet on stage |
 | Hosting | Runs on the laptop; phones join over Wi-Fi or hotspot | Live streaming and in-memory state do not fit serverless hosting such as Vercel |
 | Fake UPI IDs | All simulated IDs end in `@sim…` (`rahul.k482@simsbi`) | A simulated "mule" must never match a real person's UPI ID |
 
@@ -128,7 +128,7 @@ payment and tells the person why. FRI could become one more input. Do not claim 
  (judge's phone)    │    ├────────────────────────────────────────────────────────────┤
                     │    │ 1 XGBoost            known scam patterns, exact TreeSHAP   │ ┌▶ /pay alert screen
  Bank / fintech ────┤    │ 2 Isolation Forest   unusual, needs no labels              │ │   (why, in EN and HI)
- POST /api/v1/score │    │ 3 SatarkAI engine    note, link, UPI ID, SMS (reused)      │ │
+ POST /api/v1/score │    │ 3 the earlier project engine    note, link, UPI ID, SMS (reused)      │ │
                     │    │ 4 Hard rules         e.g. P2P collect, "PIN to receive"    │─┼▶ / live dashboard
  Android SMS Guard ─┤    ├────────────────────────────────────────────────────────────┤ │   (feed, alerts, graph)
  (real SMS, reused) │    │ risk = 1 - (1-p)(1-a)(1-r1)(1-r2)...   → score 0-100       │ │
@@ -182,7 +182,7 @@ So precision on our test set overstates real life. We publish a corrected estima
 
 Downloaded from the Hugging Face mirror `theman10/paysim` (493 MB). Original: *PaySim*, Lopez-Rojas et al.
 Not stored in the repo. Used only to run the same training recipe on data we did not write. We check it for
-shortcuts, as SatarkAI did with PhiUSIIL: fraud in PaySim empties the account, so balance columns may give
+shortcuts, as the earlier project did with PhiUSIIL: fraud in PaySim empties the account, so balance columns may give
 the label away. Results are reported with and without them.
 
 ---
@@ -196,7 +196,7 @@ drift apart. Only events earlier than the payment are visible. Both are tested.
 |---|---|
 | **Payer** | amount, amount vs usual, amount vs largest ever, how rare this hour is for them, payments in 1 h and 24 h, sum in 1 h and 24 h, new payee, new payees in 1 h, new device, device age, km and km/h since last payment, how the payment started (typed, QR, link, collect), history length |
 | **Payee (mule signals)** | account age, merchant, verified, payments in, distinct payers in 24 h, share of first-time payers, money in and out, share passed through within 1 h, collects sent, share of collects declined, reports |
-| **Context (SatarkAI)** | note risk, link risk, UPI ID imitating a brand or containing scam words, SMS risk in the last 15 min, SMS mentions this payee or this link's domain |
+| **Context (the earlier project)** | note risk, link risk, UPI ID imitating a brand or containing scam words, SMS risk in the last 15 min, SMS mentions this payee or this link's domain |
 
 ---
 
@@ -207,7 +207,7 @@ drift apart. Only events earlier than the payment are visible. Both are tested.
   percentile `a`.
 - **Hard rules** `r`: high-precision facts, for example a P2P collect request (not allowed on UPI since 1 Oct 2025)
   or a note asking for a PIN to *receive* money.
-- **Fusion**, the same noisy-OR formula as SatarkAI, so one line explains it:
+- **Fusion**, the same noisy-OR formula as the earlier project, so one line explains it:
   `risk = 1 - (1-p)(1-a)(1-r1)(1-r2)...`. More evidence never lowers the risk.
 - **Policy**, `decide_action(risk, amount, signals)` in `app/payments/policy.py`:
 
@@ -218,7 +218,7 @@ drift apart. Only events earlier than the payment are visible. Both are tested.
 | HOLD | Paused for a cooling-off; analyst queue | High risk and enough money at stake |
 | BLOCK | Refused, with the reason and a way to appeal | Very high risk **and** two independent layers agree, or a hard rule |
 
-A model alone cannot block: same idea as SatarkAI's rule that High needs a non-model indicator. This is the
+A model alone cannot block: same idea as the earlier project's rule that High needs a non-model indicator. This is the
 direct answer to the base-rate problem in section 5.
 
 **Ajay's decision:** the first version of `decide_action()` is a working default. It is the most
@@ -230,7 +230,7 @@ business-critical logic in the system and the first thing a judge will question,
 
 1. XGBoost's SHAP values are summed per **reason group** ("money passes straight through" covers 3 features).
 2. Top positive groups become reasons, ranked by real SHAP size, filled with real values.
-3. Hard rules and the SatarkAI engine add their own reasons with the exact words that triggered them.
+3. Hard rules and the the earlier project engine add their own reasons with the exact words that triggered them.
 4. If the anomaly model fired, the page shows what is most unusual, for example "higher than 99.9% of normal
    payments". That describes the payment, not the forest's internals, and the page words it that way.
 
@@ -248,7 +248,7 @@ The same reasons appear in Hindi. An analyst also sees the full SHAP waterfall.
 
 ## 11. Honesty rules and evaluation
 
-SatarkAI won partly by being honest about its numbers. Same rules here:
+the earlier project won partly by being honest about its numbers. Same rules here:
 
 1. Every number in the app, deck and docs comes from `models/metrics.json`, written by a script. None typed by hand.
 2. Test data is **later in time** than training data, and test scammers are **new accounts**.
@@ -298,7 +298,7 @@ Message and note text is always rendered as plain text, so a scam note can never
 | `GET /api/v1/graph` | Network around an account |
 | `POST /api/v1/sim/...` | Start, stop, speed, launch an attack (only from the laptop) |
 | `GET /api/v1/metrics` | Model card numbers |
-| `GET /api/health`, `POST /api/ingest`, `GET /api/check-url`, `POST /api/check-urls`, `GET /go` | **Kept compatible with SatarkAI**, so the existing Android app and extension work without changes |
+| `GET /api/health`, `POST /api/ingest`, `GET /api/check-url`, `POST /api/check-urls`, `GET /go` | **Kept compatible with the earlier project**, so the existing Android app and extension work without changes |
 
 ---
 
@@ -308,19 +308,19 @@ Message and note text is always rendered as plain text, so a scam note can never
 plan.md  README.md  run.sh  requirements.txt  requirements-dev.txt  pytest.ini
 app/
   main.py  config.py
-  analysis/     SatarkAI engine, unchanged
-  data/         SatarkAI rules and brand lists, unchanged
+  analysis/     the earlier project engine, unchanged
+  data/         the earlier project rules and brand lists, unchanged
   payments/     schema, features, context, models, explain, policy, scorer, stream, scenarios, graph, store
   static/       dashboard, pay, merchant, how; vendor/ (Chart.js, Inter)
 ml/             simulate, dataset, train, evaluate, paysim_benchmark
-ml/satarkai/    SatarkAI's text and URL models, unchanged
+ml/engine/    the earlier project's text and URL models, unchanged
 models/         xgb, iforest, bundle, metrics.json
 scripts/        loadtest
 tests/          unit, parity, API, security, acceptance R1-R10, browser
-android/        Phone app: SatarkAI SMS Guard, plus UPI QR scanning added later
-extension/      SatarkAI Link Guard, unchanged
-demo/           SatarkAI's demo pages with fake scam links, unchanged
-docs/           DEMO_SCRIPT.md, JUDGING_QA.md, REUSED_FROM_SATARKAI.md, reused_manifest.json, SatarkPay_Pitch.pptx
+android/        Phone app: the earlier project SMS Guard, plus UPI QR scanning added later
+extension/      the earlier project Link Guard, unchanged
+demo/           the earlier project's demo pages with fake scam links, unchanged
+docs/           DEMO_SCRIPT.md, JUDGING_QA.md, REUSED_CODE.md, reused_manifest.json, SatarkPay_Pitch.pptx
 ```
 
 ---
@@ -329,9 +329,9 @@ docs/           DEMO_SCRIPT.md, JUDGING_QA.md, REUSED_FROM_SATARKAI.md, reused_m
 
 The PDF does not say whether code written before the event is allowed. **Check with the organisers.** The
 screening PDF's contact is Manasa Paulson (`2025ucp1929@mnit.ac.in`). This table is what you would show them.
-`docs/REUSED_FROM_SATARKAI.md` lists the exact files and checksums.
+`docs/REUSED_CODE.md` lists the exact files and checksums.
 
-| From SatarkAI (commit `66b436a`, made for IGNITE) | New for SPHINX |
+| From the earlier project (commit `66b436a`, made for an earlier hackathon) | New for SPHINX |
 |---|---|
 | Text and URL detection engine, rules, brand list | UPI simulator, PaySim benchmark |
 | Trained text and URL models | XGBoost and Isolation Forest models |
@@ -358,7 +358,7 @@ Every box is ticked only after it has been run and checked. Never ticked on the 
 - [x] **M11 Load test.** Real latency and throughput into `metrics.json`
 - [x] **M12 Reused sensors.** Copy Android and extension; contract tests against the routes they call
 - [x] **M13 Acceptance.** One test per R1-R10; full suite green
-- [x] **M14 Docs.** README, DEMO_SCRIPT, JUDGING_QA, REUSED_FROM_SATARKAI; every number checked against `metrics.json`
+- [x] **M14 Docs.** README, DEMO_SCRIPT, JUDGING_QA, REUSED_CODE; every number checked against `metrics.json`
 - [x] **M15 Deck.** Load `pptx` skill. Short deck from measured results
 - [x] **M16 Review.** `code-review`, `security-review`, secret scan of everything to be published
 - [x] **M17 Publish.** New public repo `ajayyadav432/SatarkPay`, push
@@ -369,7 +369,7 @@ Every box is ticked only after it has been run and checked. Never ticked on the 
 
 | Group | Checks |
 |---|---|
-| Engine (copied tests) | The reused engine behaves here exactly as in SatarkAI |
+| Engine (copied tests) | The reused engine behaves here exactly as in the earlier project |
 | Simulator | Same seed gives same data; scam mix as configured; hard cases present |
 | Feature store | Hand-computed windows; **no future data**; training replay equals live scoring |
 | Context | `paytm.cashback.offer@okaxis` flagged, `rahul.sharma98@okhdfcbank` not, real biller note not punished |
@@ -454,15 +454,15 @@ Every finding that changes the design goes here, with its evidence.
 
 - **30 Oct 2026.** P2P collect ended by NPCI order; the PS still lists "fake collect requests". We model them as
   merchant-style collects from unverified IDs and treat a P2P collect as a hard rule.
-- **30 Oct 2026.** SatarkAI gives "electricity bill oct" Medium 40 and `paytm.cashback.offer@okaxis` Safe 0.
+- **30 Oct 2026.** the earlier project gives "electricity bill oct" Medium 40 and `paytm.cashback.offer@okaxis` Safe 0.
   The engine stays unchanged; a new context layer and the model's learned interactions handle these.
 - **30 Oct 2026.** First model scored PR-AUC 0.99: treated as a bug, and it was. Payees under 30 days old were 0.000% of genuine
   payments and 57.5% of fraud (no genuine account ever opened during the simulation), and mules jumped to a random city on every
   transfer. Fixed: accounts now open throughout the simulation, mules stay put, paying new people is common, small shops also use
   collect and links, careful scams are smaller, and 10% of scams are unreported in training. XGBoost fell to about 0.90.
 - **30 Oct 2026.** The name "Payal" was flagged as imitating PayPal (one letter away), and the surname Kotak as Kotak Bank. This comes
-  from SatarkAI's lookalike check, which suits websites but not people's names. In a UPI ID only a swapped character now counts.
-  SatarkAI also gives the real payment link `paytm.me` High 60; known payment gateways are now neutral in a payment.
+  from the earlier project's lookalike check, which suits websites but not people's names. In a UPI ID only a swapped character now counts.
+  the earlier project also gives the real payment link `paytm.me` High 60; known payment gateways are now neutral in a payment.
 - **30 Oct 2026.** One or two complaints reach 1.9% of genuine payments at 5% precision: removed as a rule. The anomaly weight was
   chosen by leaving each scam type out of training, on validation data: 0.15 keeps nearly all the benefit on scams never seen and costs
   little on known ones. Results come from two new worlds (seeds 3003 and 4004) that nothing was tuned on.
@@ -473,7 +473,7 @@ Every finding that changes the design goes here, with its evidence.
 - **30 Oct 2026.** Real fraud is about 6.8 per million, so at this budget about 965 alerts would be false per real scam. A bank would tighten the budget. This is why warnings are cheap and a model alone cannot block.
 - **30 Oct 2026.** Security review: DNS rebinding could reach laptop-only controls (hostnames are now refused), any device could plant an SMS for someone else (`/api/v1/sms` now needs the pairing code, and an SMS sent with a payment counts for that payment only), and any device could answer for another person's payment (a secret token is now required, clients cannot choose payment numbers, one person's reports count once). A backslash could disguise a link as official (now normalised). The scoring API still has no login: stated as a limit.
 - **30 Oct 2026.** Stream simulator, not Kafka. Correction: this first said the laptop had no Docker or Java. That check ran inside the VS Code Flatpak sandbox; the host has both. Kafka still has not been run or tested.
-- **30 Oct 2026.** `models/satarkai/` was moved to `ml/satarkai/` from outside the build session and `docs/` was removed. The
+- **30 Oct 2026.** `ml/engine/` was moved to `ml/engine/` from outside the build session and `docs/` was removed. The
   move was kept and the config points there. Without its models the engine still answers, only worse (Critical 90 became
   High 78), and its copied tests skip silently. A new test fails loudly in that case, and training refuses to start.
 - **30 Oct 2026.** The reused Android app could not scan or check a UPI payment, which is the point of the problem statement. Added QR scanning with CameraX and ML Kit. Seven reused files changed and left the manifest. A real UPI ID has no history here, so the app hides model reasons for it and never says it is safe.

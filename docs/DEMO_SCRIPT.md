@@ -21,7 +21,7 @@ Live numbers change with every run, so read them off the screen. Do not memorise
 
 **0:30 The insight (Ajay).** "Many of these scams are authorised by the victim: right phone, right PIN, right person. To a model that only reads the numbers, many look normal. So we read the money *and* the words."
 
-**0:50 Attack 1: fake collect (Gaurav clicks, Manasvi holds the phone).**
+**0:50 Attack 1: fake collect (one person clicks, another holds the phone).**
 1. Click **Launch** on *Fake collect request*.
 2. The feed and alerts react. The phone changes by itself. Hold it up.
 3. Read the reasons aloud. Tap **हिंदी**. Read one in Hindi.
@@ -30,7 +30,7 @@ Live numbers change with every run, so read them off the screen. Do not memorise
 
 **1:50 Why this alert (Ajay).** Click the alert on the dashboard. "These are not guesses. The bars are the model's exact SHAP values, and they add up to its output. The sentences are filled from them with the real numbers. No language model is involved, so nothing can be invented."
 
-**2:20 Attack 2: mule ring (Gaurav clicks).**
+**2:20 Attack 2: mule ring (one person clicks).**
 1. Click **Launch** on *Mule ring*.
 2. "There is no note and no link to read. Only the money's behaviour gives it away."
 3. Point at *Where the money went*: people on the left, the mule in the middle, the next hop on the right.
@@ -46,7 +46,7 @@ Live numbers change with every run, so read them off the screen. Do not memorise
 
 **4:20 Viability (Ajay).** "A bank or an app makes one API call before sending the payment. p95 is 5.06 ms on this laptop. It needs real data to prove itself, and a view across banks. FRI rates phone numbers and MuleHunter rates accounts. We decide on one payment and tell the person why, and we could use both as inputs."
 
-**4:50 Close (Ajay).** "SatarkAI asked you to check before you click. SatarkPay gives every Indian a second opinion before they pay."
+**4:50 Close (Ajay).** "SatarkPay gives every Indian a second opinion before they pay."
 
 ## If something goes wrong
 

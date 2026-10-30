@@ -14,14 +14,6 @@
    "from": "app/analysis/extract.py",
    "sha256": "6caa7cb4c9c91ec85039d7f338b6d535a391b03547ae9220e4d3fefd8d922f87"
   },
-  "app/analysis/followup.py": {
-   "from": "app/analysis/followup.py",
-   "sha256": "b8d038f77231e7a5a6ed7aa0151f449ac536ab8727578471bd0351b6b093b2d9"
-  },
-  "app/analysis/lookup.py": {
-   "from": "app/analysis/lookup.py",
-   "sha256": "64c22190466c625fbf285d906bc9e571e6e3017681176bea601c29da9addbcac"
-  },
   "app/analysis/models.py": {
    "from": "app/analysis/models.py",
    "sha256": "bc519e5ab49c9100e445707f793e5788f392ef011241008be8411438e6c1458b"
@@ -66,23 +58,23 @@
    "from": "app/data/url_lists.json",
    "sha256": "a451b8bd516d4066060d7901f03f7c5baba839ecdb71303fa0864293608ff680"
   },
-  "ml/satarkai/metrics.json": {
+  "ml/engine/metrics.json": {
    "from": "models/metrics.json",
    "sha256": "ccc31d4ab58c1b647013130f587b40cdda4aeb1e0bd08bde076aaa8f74987284"
   },
-  "ml/satarkai/shap_background.joblib": {
+  "ml/engine/shap_background.joblib": {
    "from": "models/shap_background.joblib",
    "sha256": "9c3e28852724c836a0cc88ded0fcab27aa337dfb71d1204ccd5e7f2cd8b38295"
   },
-  "ml/satarkai/shap_summary.json": {
+  "ml/engine/shap_summary.json": {
    "from": "models/shap_summary.json",
    "sha256": "f00cad0dab984837ed4bff4d4566a141525a7b836010c6190a03601c51ed5fca"
   },
-  "ml/satarkai/text_model.joblib": {
+  "ml/engine/text_model.joblib": {
    "from": "models/text_model.joblib",
    "sha256": "0cc38536d759d90ef3adff133cb48e37872df4a28370c5bb6ecf929f5ae54ae2"
   },
-  "ml/satarkai/url_model.joblib": {
+  "ml/engine/url_model.joblib": {
    "from": "models/url_model.joblib",
    "sha256": "f0a4731eb833a1d077ccb422e7a4de2b9939730c0d90ea329b8c8393d5a518e9"
   },
@@ -97,18 +89,6 @@
   "android/app/src/main/java/ai/satark/smsguard/BlockActivity.kt": {
    "from": "android/app/src/main/java/ai/satark/smsguard/BlockActivity.kt",
    "sha256": "3fd0de13b74eeb83befbac24c64b3a397b186f178095879407ac6945e64532a8"
-  },
-  "android/app/src/main/java/ai/satark/smsguard/Notifier.kt": {
-   "from": "android/app/src/main/java/ai/satark/smsguard/Notifier.kt",
-   "sha256": "3a3ce173646ab545f985814e8f2d8576d6c2b60687609a9cc9f8fd6ec28fce15"
-  },
-  "android/app/src/main/java/ai/satark/smsguard/Retry.kt": {
-   "from": "android/app/src/main/java/ai/satark/smsguard/Retry.kt",
-   "sha256": "efdf127bea0c2c3832aa5ddb0766245faa52c86df907bb4eb9c9010fb89d0e14"
-  },
-  "android/app/src/main/java/ai/satark/smsguard/SmsReceiver.kt": {
-   "from": "android/app/src/main/java/ai/satark/smsguard/SmsReceiver.kt",
-   "sha256": "d69ceb5997de9bf5885a0aa3049da75303161974503a70414db44cec7dc1391c"
   },
   "android/app/src/main/java/ai/satark/smsguard/theme/Type.kt": {
    "from": "android/app/src/main/java/ai/satark/smsguard/theme/Type.kt",
@@ -125,10 +105,6 @@
   "android/app/src/main/res/drawable/ic_launcher_monochrome.xml": {
    "from": "android/app/src/main/res/drawable/ic_launcher_monochrome.xml",
    "sha256": "206c43e0b83c65324f017d7ba4749fedf0e2affbb65175c03f7726cf824de690"
-  },
-  "android/app/src/main/res/drawable/ic_logo.xml": {
-   "from": "android/app/src/main/res/drawable/ic_logo.xml",
-   "sha256": "32710a1d6b77596155e68864e8d9743f90ea778935fb0624ec1872109d5f9fd8"
   },
   "android/app/src/main/res/drawable/ic_stat_satark.xml": {
    "from": "android/app/src/main/res/drawable/ic_stat_satark.xml",
@@ -174,22 +150,6 @@
    "from": "android/gradlew.bat",
    "sha256": "2f18fc6abd50803de7b3a225038d284268904c9d13caa6cf81f99365dc876479"
   },
-  "android/settings.gradle.kts": {
-   "from": "android/settings.gradle.kts",
-   "sha256": "0709713d2e04e03e8b7732f723a8fe696df8c379a5d8a3c7d244fc14f0b9e17e"
-  },
-  "extension/background.js": {
-   "from": "extension/background.js",
-   "sha256": "ef7c9c98dc3e7f813b25fc596921ecd82c35ab28ecc508b55bc40ef2cfb48eac"
-  },
-  "extension/content.js": {
-   "from": "extension/content.js",
-   "sha256": "9edc00941a0423db178a334a0548c4acb668796d0f3e90f2f1b77351ce208fca"
-  },
-  "extension/gmail.js": {
-   "from": "extension/gmail.js",
-   "sha256": "841cb17d04126f772b064a15a2e444096eaad58e90adb78a10d8a8183c1a6bed"
-  },
   "extension/icons/icon128.png": {
    "from": "extension/icons/icon128.png",
    "sha256": "ef8d34e5fb6e04b231772001b4512ab3d7e3d275e09498b150666be49ec9bfc2"
@@ -206,41 +166,13 @@
    "from": "extension/icons/icon48.png",
    "sha256": "87e817cd90ac1c7c8cbfa625599f5e3b8c9561e5fb123e64e682d0fdb32b6df5"
   },
-  "extension/manifest.json": {
-   "from": "extension/manifest.json",
-   "sha256": "bbfd64f0f28b8bce6ca5e9741fa68e8f4787c47b8ebcc387da6be20915e17883"
-  },
   "extension/popup.css": {
    "from": "extension/popup.css",
    "sha256": "6ec7ded7bfc6167848af0dcacf50cb69c527ec1e0e59805d1b8457edbd3d39ad"
   },
-  "extension/popup.html": {
-   "from": "extension/popup.html",
-   "sha256": "56ed9e2f4a6986b41b9d568abf6e790d0e89539b53132b2ea4d5eee7848508a7"
-  },
-  "extension/popup.js": {
-   "from": "extension/popup.js",
-   "sha256": "2067c2f8dd865ecf3043539eb13bc64b57b4a1d0beab87f3c44a005b04dda9af"
-  },
-  "demo/inbox.html": {
-   "from": "demo/inbox.html",
-   "sha256": "4b4be93e235b6165af3d334ccda1b13c1722f7cb02a695eed43f884ed43aab2e"
-  },
-  "demo/index.html": {
-   "from": "demo/index.html",
-   "sha256": "e193a3520a9f42f0158d46f3d7c4d8b903cd27d5ee2709c139a738081b76696c"
-  },
-  "demo/social.html": {
-   "from": "demo/social.html",
-   "sha256": "103c581f3561553c930d3cd340dcc8829e16e5eb9d8305dcf4fb830d3e6fa7cf"
-  },
   "app/static/theme.js": {
    "from": "app/static/theme.js",
    "sha256": "dc22d8898571d56dfb5b10271d6d964694fb9139ae9fffcf4ca29337404c256c"
-  },
-  "app/static/go.js": {
-   "from": "app/static/go.js",
-   "sha256": "6e56b9981e5c2e83978e88e1f22df0e8def60010bb625c5f1d52feca6ea99c40"
   },
   "app/static/favicon.svg": {
    "from": "app/static/favicon.svg",
@@ -295,12 +227,29 @@
   "android/app/build.gradle.kts",
   "android/app/src/main/AndroidManifest.xml",
   "android/app/src/main/java/ai/satark/smsguard/MainActivity.kt",
+  "android/app/src/main/java/ai/satark/smsguard/Notifier.kt",
+  "android/app/src/main/java/ai/satark/smsguard/Retry.kt",
   "android/app/src/main/java/ai/satark/smsguard/SatarkClient.kt",
+  "android/app/src/main/java/ai/satark/smsguard/SmsReceiver.kt",
   "android/app/src/main/java/ai/satark/smsguard/Store.kt",
   "android/app/src/main/java/ai/satark/smsguard/theme/Color.kt",
   "android/app/src/main/java/ai/satark/smsguard/theme/Theme.kt",
+  "android/app/src/main/res/drawable/ic_logo.xml",
   "android/app/src/main/res/values/strings.xml",
   "android/app/src/main/res/values/themes.xml",
-  "android/gradle/libs.versions.toml"
+  "android/gradle/libs.versions.toml",
+  "android/settings.gradle.kts",
+  "app/analysis/followup.py",
+  "app/analysis/lookup.py",
+  "app/static/go.js",
+  "demo/inbox.html",
+  "demo/index.html",
+  "demo/social.html",
+  "extension/background.js",
+  "extension/content.js",
+  "extension/gmail.js",
+  "extension/manifest.json",
+  "extension/popup.html",
+  "extension/popup.js"
  ]
 }

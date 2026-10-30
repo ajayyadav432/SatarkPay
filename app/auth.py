@@ -9,6 +9,8 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
+import json
+import re
 import secrets
 import sys
 import threading
@@ -17,6 +19,7 @@ import time
 from fastapi import HTTPException, Request
 
 from app import config
+from app.payments import store
 
 ACCOUNTS = {
     "user": {"username": "sunita", "name": "Sunita Sharma", "home": "/pay", "env": "SATARK_PASS_USER"},
@@ -24,14 +27,27 @@ ACCOUNTS = {
     "admin": {"username": "admin", "name": "Fraud analyst", "home": "/", "env": "SATARK_PASS_ADMIN"},
 }
 COOKIE = "satarkpay_session"
+SIGN_UP_ROLES = ("user", "merchant")
 SESSION_SECONDS = 12 * 3600
-MAX_SESSIONS = 2000
 MAX_FAILS = 5
 LOCK_SECONDS = 60
+MIN_PASSWORD = 8
+_USERNAME = re.compile(r"^[a-z0-9._-]{3,30}$")
 
 _lock = threading.Lock()
-_sessions: dict[str, dict] = {}     # keyed by the token's hash, so a memory dump holds no usable token
+_ended: dict[str, float] = {}     # logged-out session ids until they would have expired anyway
 _fails: dict[str, tuple[int, float]] = {}
+_fallback_secret = secrets.token_bytes(32)
+
+
+def _secret() -> bytes:
+    """Sessions are signed, not stored, so they survive a restart when this secret is set (needed on Vercel, where instances come and go)."""
+    configured = config.env("SATARK_SESSION_SECRET")
+    return configured.encode() if configured else _fallback_secret
+
+
+def test_logins_on() -> bool:
+    return config.env("SATARKPAY_TEST_LOGINS", "1") == "1"
 
 
 def hash_password(password: str) -> str:
@@ -51,39 +67,94 @@ def check_password(password: str, stored: str | None) -> bool:
         return False
 
 
-def _token_key(token: str) -> str:
-    return hashlib.sha256(token.encode()).hexdigest()
+_DUMMY = hash_password(secrets.token_hex(8))
+
+
+def new_session(role: str, name: str, username: str) -> str:
+    body = base64.urlsafe_b64encode(json.dumps({"r": role, "n": name, "u": username, "x": int(time.time()) + SESSION_SECONDS, "j": secrets.token_hex(8)}).encode()).decode()
+    signature = hmac.new(_secret(), body.encode(), hashlib.sha256).hexdigest()
+    return body + "." + signature
+
+
+def _read(token: str | None) -> dict | None:
+    try:
+        body, signature = (token or "").split(".")
+        if not hmac.compare_digest(signature, hmac.new(_secret(), body.encode(), hashlib.sha256).hexdigest()):
+            return None
+        session = json.loads(base64.urlsafe_b64decode(body))
+    except (ValueError, TypeError):
+        return None
+    if session["x"] <= time.time() or session["r"] not in ACCOUNTS:
+        return None
+    with _lock:
+        return None if session["j"] in _ended else session
+
+
+def _known_password(role: str, username: str) -> tuple[str | None, str | None]:
+    """The stored hash and display name for this login, from the demo accounts or from sign-ups."""
+    account = ACCOUNTS[role]
+    if username == account["username"]:
+        return config.env(account["env"]), account["name"]
+    row = store.get_account(role, username)
+    return (row["password_hash"], row["name"]) if row else (None, None)
 
 
 def login(role: str, username: str, password: str) -> str:
     """A new session token. The same message for every failure, so it does not say which part was wrong."""
-    account = ACCOUNTS[role]
+    username = username.strip().lower()
+    key = role + ":" + username      # per account, so one person's typos cannot lock out everyone else
     with _lock:
-        count, until = _fails.get(role, (0, 0.0))
+        count, until = _fails.get(key, (0, 0.0))
     if count >= MAX_FAILS and time.monotonic() < until:
         raise HTTPException(status_code=429, detail="Too many wrong tries. Wait a minute and try again.")
-    ok = check_password(password, config.env(account["env"]))      # always hashed, so a wrong name takes as long as a wrong password
-    if not ok or not hmac.compare_digest(username.strip().lower().encode(), account["username"].encode()):
+    stored, name = _known_password(role, username)
+    if not check_password(password, stored or _DUMMY):      # always hashed, so a wrong name takes as long as a wrong password
         with _lock:
             count = 1 if time.monotonic() >= until else count + 1
-            _fails[role] = (count, time.monotonic() + LOCK_SECONDS)
+            while len(_fails) >= 5000:
+                del _fails[next(iter(_fails))]
+            _fails[key] = (count, time.monotonic() + LOCK_SECONDS)
         raise HTTPException(status_code=401, detail="Wrong username or password.")
-    token = secrets.token_urlsafe(32)
-    now = time.monotonic()
+    if stored is None:
+        raise HTTPException(status_code=401, detail="Wrong username or password.")
     with _lock:
-        _fails.pop(role, None)
-        for key in [k for k, s in _sessions.items() if s["expires"] <= now]:
-            del _sessions[key]
-        while len(_sessions) >= MAX_SESSIONS:
-            del _sessions[next(iter(_sessions))]
-        _sessions[_token_key(token)] = {"role": role, "expires": now + SESSION_SECONDS}
-    return token
+        _fails.pop(key, None)
+    return new_session(role, name, username)
+
+
+def sign_up(role: str, username: str, password: str, name: str) -> str:
+    """Users and merchants can create an account. An admin account can never be created this way."""
+    username = username.strip().lower()
+    name = name.strip()
+    if role not in SIGN_UP_ROLES:
+        raise HTTPException(status_code=403, detail="Admin accounts cannot be created here.")
+    if not _USERNAME.match(username):
+        raise HTTPException(status_code=422, detail="Username: 3 to 30 letters, numbers, dots, dashes or underscores.")
+    if len(password) < MIN_PASSWORD:
+        raise HTTPException(status_code=422, detail=f"Password: at least {MIN_PASSWORD} characters.")
+    if not 2 <= len(name) <= 60:
+        raise HTTPException(status_code=422, detail="Enter your name or your shop's name.")
+    taken = username == ACCOUNTS[role]["username"] or not store.add_account(role, username, hash_password(password), name)
+    if taken:
+        raise HTTPException(status_code=409, detail="That username is taken.")
+    return new_session(role, name, username)
+
+
+def test_login(role: str) -> str:
+    """One click for judges. It opens the shared demo account, on simulated data only."""
+    if not test_logins_on():
+        raise HTTPException(status_code=403, detail="Test logins are switched off.")
+    return new_session(role, ACCOUNTS[role]["name"], ACCOUNTS[role]["username"])
 
 
 def logout(token: str | None) -> None:
-    if token:
+    session = _read(token)
+    if session:
+        now = time.time()
         with _lock:
-            _sessions.pop(_token_key(token), None)
+            for key in [k for k, x in _ended.items() if x <= now]:
+                del _ended[key]
+            _ended[session["j"]] = session["x"]
 
 
 def _token_from(request: Request) -> str | None:
@@ -93,18 +164,13 @@ def _token_from(request: Request) -> str | None:
     return request.cookies.get(COOKIE)
 
 
+def session_of(request: Request) -> dict | None:
+    return _read(_token_from(request))
+
+
 def role_of(request: Request) -> str | None:
-    token = _token_from(request)
-    if not token:
-        return None
-    with _lock:
-        session = _sessions.get(_token_key(token))
-        if session is None:
-            return None
-        if session["expires"] <= time.monotonic():
-            del _sessions[_token_key(token)]
-            return None
-        return session["role"]
+    session = session_of(request)
+    return session["r"] if session else None
 
 
 def token_of(request: Request) -> str | None:

@@ -73,7 +73,7 @@ The left column is word for word from the problem statement. There is one automa
 | # | Problem statement | How |
 |---|---|---|
 | R1 | "fake collect requests" | Every collect request is scored before the person approves it: the note, the payee, the blast pattern. NPCI ended P2P collect by 1 Oct 2025, so a P2P collect is a hard rule and fake collects are modelled as merchant-style accounts |
-| R2 | "phishing links" | The link that opened the payment, and any scam SMS received just before, read by the SatarkAI engine |
+| R2 | "phishing links" | The link that opened the payment, and any scam SMS received just before, read by the context engine |
 | R3 | "mule accounts" | Many strangers paying in, money going straight out, young accounts, one phone with many accounts. A live network view |
 | R4 | "users only realise after money is gone" | The decision comes before money moves. If a victim pays anyway, the mule's next transfer can still be held: **₹ still recoverable** |
 | R5 | "Banks, fintech apps, small merchants, consumers" | Analyst console, REST API, merchant view with a measured false-alarm rate, alert screen |
@@ -125,7 +125,7 @@ We never report accuracy. Reported UPI fraud is about 6.8 per million payments, 
 | Payer behaviour only | 0.496 | 56% |
 | + the account's own money moves | 0.516 | 58% |
 | + payee signals (mules) | 0.898 | 95% |
-| + SatarkAI context (note, link, UPI ID, SMS) | 0.940 | 97% |
+| + Context engine (note, link, UPI ID, SMS) | 0.940 | 97% |
 | + Isolation Forest and hard rules (the full system) | 0.931 | 95% |
 | Isolation Forest alone (no labels at all) | 0.209 | 39% |
 
@@ -161,9 +161,9 @@ On scams it has seen, XGBoost alone does slightly better than the full system. T
 - **The Android app has been run on one real phone (Samsung SM-E366B, Android 17) over USB.** Connection and its built-in sample SMS worked against this server. QR pictures, the check and the result screens were tested on that phone (`android/app/src/androidTest`). The camera was shown to open, but reading a QR through the lens and a real incoming SMS have not been tested. The extension was run in Chromium against this server.
 - **The "this looks like" label is a best guess.** It named the right scam for 80% of flagged scams in the test. The reasons are exact. The label is not.
 
-## Built on SatarkAI
+## Reused code
 
-The team's earlier project [SatarkAI](https://github.com/ajayyadav432/SatarkAI) won IEEE-IGNITE 2026. SatarkPay reuses its detection engine and browser extension unchanged. It also reuses its Android app, which now scans UPI QR codes as well. Everything to do with transactions is new. [docs/REUSED_FROM_SATARKAI.md](docs/REUSED_FROM_SATARKAI.md) lists exactly what came from where, and a test checks the checksums.
+SatarkPay builds on code from an earlier project: the text and link engine, the phone app's SMS check and the browser extension. Everything to do with transactions is new. [docs/REUSED_CODE.md](docs/REUSED_CODE.md) lists exactly what came from where, and a test checks the checksums.
 
 ## Project layout
 
@@ -172,7 +172,7 @@ app/
   main.py            REST API, live stream, pages
   config.py          names, paths, limits
   payments/          features, context, rules, models, policy, explain, scorer, live, scenarios, graph, store
-  analysis/, data/   the SatarkAI engine and rules, unchanged
+  analysis/, data/   the context engine and rules, unchanged
   static/            dashboard, pay, merchant, how
 ml/
   simulate.py        the UPI world: normal life, 7 scam types, hard cases
@@ -180,11 +180,11 @@ ml/
   train.py           XGBoost, Isolation Forest, score bands
   evaluate.py        everything on the model card
   paysim_benchmark.py
-  satarkai/          SatarkAI's trained text and URL models, unchanged
+  engine/            the engine's trained text and URL models, unchanged
 models/              xgb.ubj, iforest.joblib, bundle.json, metrics.json
-tests/               unit, parity, API, security, acceptance R1-R10, browser; engine/ holds SatarkAI's own tests
-android/             the phone app: scans UPI QR codes and checks SMS (SMS part from SatarkAI)
-extension/           SatarkAI Link Guard, unchanged
+tests/               unit, parity, API, security, acceptance R1-R10, browser; engine/ holds the engine's own tests
+android/             the phone app: scans UPI QR codes and checks SMS (SMS part from SatarkPay)
+extension/           SatarkPay Link Guard, unchanged
 docs/                demo script, judging Q&A, reuse record, pitch deck
 plan.md              the plan, design decisions and the findings log
 ```
@@ -199,6 +199,6 @@ plan.md              the plan, design decisions and the findings log
 
 - **The UPI world:** written by the team (`ml/simulate.py`). Same seed, same data. Not stored in the repo.
 - **PaySim:** Lopez-Rojas, Elmir, Axelsson (2016), downloaded from the Hugging Face mirror `theman10/paysim`. Not stored in the repo.
-- **SatarkAI's text and URL models:** their own datasets are listed in the SatarkAI README.
+- **the engine's text and URL models:** their own datasets are listed in the SatarkPay README.
 - **Facts quoted in the app and the pitch:** [NPCI ends P2P collect](https://www.angelone.in/news/market-updates/npci-to-end-upi-person-to-person-collect-requests-from-october-to-curb-fraud), [UPI fraud figures, Lok Sabha, 15 Dec 2025](https://ianslive.in/upi-frauds-worth-rs-805-crore-witnessed-this-fiscal-so-far-minister--20251215175703), [UPI volume in FY25](https://www.business-standard.com/finance/news/upi-s-contribution-to-payments-ecosystem-volume-grows-to-83-4-in-fy25-125052900871_1.html), [Financial Fraud Risk Indicator](https://www.medianama.com/2025/05/223-dot-financial-fraud-risk-indicator-upi/). These are press-reported.
 - **Inter font:** SIL Open Font License, `app/static/vendor/fonts/OFL.txt`.

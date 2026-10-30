@@ -200,7 +200,7 @@ def test_a_person_to_person_collect_is_refused_because_upi_stopped_it(scorer):
 
 
 def test_a_real_bill_with_the_same_alarming_word_is_not_punished(scorer):
-    """SatarkAI alone gives 'electricity bill oct' Medium 40. Paid to a verified biller it must pass."""
+    """The engine alone gives 'electricity bill oct' Medium 40. Paid to a verified biller it must pass."""
     r = scorer.score(pay(ts=T0 + 3 * 3600, payee="electricity.board1@simhdfc", amount=900, kind="PAY", note="electricity bill oct"))
     assert r["action"] == policy.ALLOW, r["model"]
 

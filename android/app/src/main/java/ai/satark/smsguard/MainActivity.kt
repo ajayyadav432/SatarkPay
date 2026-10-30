@@ -71,7 +71,7 @@ import ai.satark.smsguard.theme.RiskHold
 import ai.satark.smsguard.theme.RiskSafe
 import ai.satark.smsguard.theme.RiskUnknown
 import ai.satark.smsguard.theme.RiskWarn
-import ai.satark.smsguard.theme.SatarkAISMSGuardTheme
+import ai.satark.smsguard.theme.SatarkPayTheme
 import ai.satark.smsguard.theme.Sky
 import ai.satark.smsguard.theme.TextMain
 import ai.satark.smsguard.theme.TextSoft
@@ -87,7 +87,7 @@ class MainActivity : ComponentActivity() {
         val shared = if (intent?.action == Intent.ACTION_SEND)
             IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java) ?: intent.clipData?.getItemAt(0)?.uri else null
         setContent {
-            SatarkAISMSGuardTheme {
+            SatarkPayTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) { App(shared) }
             }
         }

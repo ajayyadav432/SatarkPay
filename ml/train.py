@@ -124,7 +124,7 @@ def normal_ranges(train: pd.DataFrame) -> dict:
 
 def main(refresh: bool = False) -> None:
     if not all(engine_models.status().values()):
-        sys.exit(f"The SatarkAI models were not found in {config.MODELS_DIR}. Training without them would poison the context features.")
+        sys.exit(f"The SatarkPay models were not found in {config.MODELS_DIR}. Training without them would poison the context features.")
     started = time.time()
     print("Building the world...", flush=True)
     df = world_table(WorldConfig(seed=SEED), "world42", refresh)

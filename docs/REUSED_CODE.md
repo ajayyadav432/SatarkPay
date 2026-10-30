@@ -1,6 +1,6 @@
-# What was reused from SatarkAI
+# Reused code
 
-SatarkPay was built for SPHINX'26 on top of SatarkAI, the team's earlier project for IEEE-IGNITE 2026. This page says exactly what existed before and what is new, so that the organisers can judge it.
+SatarkPay was built for SPHINX'26 on top of code from an earlier project, SatarkAI. This page says exactly what existed before and what is new, so that the organisers can judge it.
 
 **The PDF of problem statements does not say whether code written before the event is allowed. Ask the organisers before relying on this project at the event.**
 
@@ -13,7 +13,7 @@ From [ajayyadav432/SatarkAI](https://github.com/ajayyadav432/SatarkAI), commit `
 |---|---|---|
 | `app/analysis` | Detection engine: extraction, link checks, rules, text and URL models | 13 |
 | `app/data` | Rules and brand lists | 3 |
-| `ml/satarkai` | Trained text and URL models | 5 |
+| `ml/engine` | Trained text and URL models | 5 |
 | `tests/engine` | The engine's own tests | 7 |
 | `android` | SMS Guard Android app, except the 10 files listed below | 23 |
 | `extension` | Link Guard browser extension | 11 |

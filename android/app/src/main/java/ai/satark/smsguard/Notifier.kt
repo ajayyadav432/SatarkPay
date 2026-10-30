@@ -34,7 +34,7 @@ object Notifier {
             .apply { description = "An incoming SMS was checked and looks safe, or could not be checked" })
     }
 
-    /** If SatarkAI recommends blocking this sender (3+ risky messages), show a separate block notification. */
+    /** If SatarkPay recommends blocking this sender (3+ risky messages), show a separate block notification. */
     fun maybeBlock(context: Context, response: org.json.JSONObject) {
         val b = response.optJSONObject("block") ?: return
         if (Build.VERSION.SDK_INT >= 33 &&
@@ -47,9 +47,9 @@ object Notifier {
             .setLargeIcon(logo(context))
             .setColor(0xFFDC3545.toInt())
             .setContentTitle("⛔ Block $sender")
-            .setContentText("Sent $count scam messages. SatarkAI recommends blocking.")
+            .setContentText("Sent $count scam messages. SatarkPay recommends blocking.")
             .setStyle(NotificationCompat.BigTextStyle().bigText(
-                "$sender has sent $count scam messages. SatarkAI recommends blocking it.\n" + b.optString("how")))
+                "$sender has sent $count scam messages. SatarkPay recommends blocking it.\n" + b.optString("how")))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
         if (isPhone) {
@@ -76,9 +76,9 @@ object Notifier {
         val big: String
         when {
             item.level == null -> {
-                title = "SatarkAI could not check an SMS"
+                title = "SatarkPay could not check an SMS"
                 line = "From ${item.sender} · ${item.error}"
-                big = "From ${item.sender}\n${item.error}\n\nOpen SatarkAI and tap \"Test connection\"."
+                big = "From ${item.sender}\n${item.error}\n\nOpen SatarkPay and tap \"Test connection\"."
             }
             risky -> {
                 title = "⚠ Scam SMS · ${item.level} ${item.score}"
@@ -97,7 +97,7 @@ object Notifier {
             }
             else -> {
                 title = "✓ SMS looks ${item.level?.lowercase()} · ${item.score}"
-                line = "From ${item.sender} · checked by SatarkAI"
+                line = "From ${item.sender} · checked by SatarkPay"
                 big = "From ${item.sender}\n${item.text.take(160)}"
             }
         }

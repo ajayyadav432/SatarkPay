@@ -1,5 +1,5 @@
-// SatarkAI Link Guard - Gmail in the browser.
-// When an e-mail is opened, its subject, sender, text and link targets are sent to the SatarkAI app on
+// SatarkPay Link Guard - Gmail in the browser.
+// When an e-mail is opened, its subject, sender, text and link targets are sent to the SatarkPay app on
 // this computer, and a verdict bar is shown above the e-mail.
 // Gmail does not document its page structure. These class names have been used by Gmail for years:
 //   div.a3s      message body          h2.hP     subject          span.gD[email]  sender
@@ -46,7 +46,7 @@
     pill.textContent = r.level + " " + r.score;
     const text = css(document.createElement("span"), { flex: "1" });
     const reasons = (r.reasons || []).slice(0, 2).join(" · ");
-    text.textContent = "SatarkAI: " + (r.level === "Safe" || r.level === "Low" ? "no strong scam signs found." : r.summary || "risky e-mail.") +
+    text.textContent = "SatarkPay: " + (r.level === "Safe" || r.level === "Low" ? "no strong scam signs found." : r.summary || "risky e-mail.") +
       (reasons ? " " + reasons + "." : "") +
       (r.block ? " ⛔ This sender has sent " + r.block.count + " risky e-mails: block the sender." : "");
     box.append(pill, text);

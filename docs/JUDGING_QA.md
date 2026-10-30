@@ -24,7 +24,7 @@ Questions a judge is likely to ask, with answers checked against the code and `m
 
 ## The models
 
-**Which algorithms?** XGBoost (supervised, known patterns), Isolation Forest (unsupervised, unusual payments), and the SatarkAI engine (rules, a URL model and a text model) for the words. Hard rules state plain facts.
+**Which algorithms?** XGBoost (supervised, known patterns), Isolation Forest (unsupervised, unusual payments), and the context engine (rules, a URL model and a text model) for the words. Hard rules state plain facts.
 
 **Why both XGBoost and Isolation Forest?** XGBoost is strong on what it has seen and exactly explainable. Isolation Forest needs no labels. Honestly, the forest alone is weak: PR-AUC 0.209. And on known scams XGBoost alone is slightly better than the full system: 97% against 95% recall at 1% false alarms. The value appears on scams never seen: with no fake collects in training, XGBoost alone catches 7% and the full system 81%.
 
@@ -32,7 +32,7 @@ Questions a judge is likely to ask, with answers checked against the code and `m
 
 **How do features stay the same in training and live?** One class, `FeatureStore`, does both. A payment is scored first and recorded after, so it can never see itself or the future. Both are tested.
 
-**How is the score calculated?** `risk = 1 - (1 - p)(1 - a)(1 - r1)(1 - r2)...`, the same formula as SatarkAI. More evidence never lowers it. The risk is then placed on 0 to 100 using bands measured on validation data, so that a level has a known meaning: 1% of genuine payments reach Medium.
+**How is the score calculated?** `risk = 1 - (1 - p)(1 - a)(1 - r1)(1 - r2)...`. More evidence never lowers it. The risk is then placed on 0 to 100 using bands measured on validation data, so that a level has a known meaning: 1% of genuine payments reach Medium.
 
 **Why not an LLM?** Explanations must be exact and repeatable, work offline, and be impossible to talk out of. A scam note could carry instructions to a language model. Templates filled from SHAP values cannot invent a reason.
 
@@ -130,7 +130,7 @@ Where the words give it away, the other layers save it. Where only behaviour doe
 
 **What would you need next?** Consented real data, to learn how good it is. A view across banks. A pilot in warn-only mode, to measure false alarms before stopping anything.
 
-**Did you build this in 24 hours?** No, and say so. It builds on SatarkAI, and the code was prepared before the event. `docs/REUSED_FROM_SATARKAI.md` lists exactly what came from where.
+**Did you build this in 24 hours?** No, and say so. It builds on SatarkPay, and the code was prepared before the event. `docs/REUSED_CODE.md` lists exactly what came from where.
 
 ## Who answers what
 
