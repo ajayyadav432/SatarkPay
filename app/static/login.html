@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>SatarkPay Login</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/theme.js"></script>
+</head>
+<body>
+  <div id="top"></div>
+  <main class="login-page">
+    <section class="card login-card">
+      <div class="login-brand"><img src="/static/logo.svg" alt="" width="52" height="52"><h1>Log in to SatarkPay</h1></div>
+      <div class="login-roles" role="tablist" aria-label="Type of account">
+        <button type="button" role="tab" class="login-role" data-role="user">User</button>
+        <button type="button" role="tab" class="login-role" data-role="merchant">Merchant</button>
+        <button type="button" role="tab" class="login-role" data-role="admin">Admin</button>
+      </div>
+      <p class="small muted" id="role-note"></p>
+      <form id="login-form" autocomplete="off">
+        <label class="field login-field">Username<input id="username" required maxlength="40" autocapitalize="none" autocomplete="username"></label>
+        <label class="field login-field">Password<input id="password" type="password" required maxlength="200" autocomplete="current-password"></label>
+        <p class="error hidden" id="login-error" role="alert"></p>
+        <button class="btn btn-primary login-go" id="btn-login" type="submit">Log in</button>
+      </form>
+    </section>
+  </main>
+  <script src="/static/common.js"></script>
+  <script src="/static/login.js"></script>
+</body>
+</html>

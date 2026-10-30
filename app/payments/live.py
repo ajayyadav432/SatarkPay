@@ -99,6 +99,8 @@ class Live:
         self.kpis = fresh_kpis()
         self.latencies: deque = deque(maxlen=LATENCY_WINDOW)
         self.feed: deque = deque(maxlen=FEED_SIZE)
+        self.shop_rows: deque = deque(maxlen=FEED_SIZE)     # the feed moves on quickly; a shop's own takings must not
+        self.shop_totals = {"received_total": 0.0, "received": 0, "not_received": 0}
         self.attacks: list[dict] = []
         self.pending: dict[str, dict] = {}          # scored on request, waiting for the user's decision
         self.phone_inbox: dict[str, deque] = {}     # requests waiting for a phone to open
@@ -261,6 +263,11 @@ class Live:
         row = {"txn_id": ev["txn_id"], "ts": ev["ts"], "time": self.clock_label(ev["ts"]), "payer": ev["payer"], "payee": ev["payee"], "amount": amount, "kind": ev["kind"], "status": status,
                "score": result["score"], "level": result["level"], "action": action, "source": source, "truth": None if label is None else ("scam" if label else "genuine")}
         self.feed.append(row)
+        if ev["payee"] == PERSONA_SHOP:
+            self.shop_rows.append(row)
+            got = status == "moved"
+            self.shop_totals["received_total"] += amount if got else 0.0
+            self.shop_totals["received" if got else "not_received"] += 1
         msg = {"type": "txn", "row": row}
         if flagged:
             alert = {**row, "note": ev.get("note") or "", "link": ev.get("link"), "likely": result.get("likely"), "headline_en": result.get("headline_en"), "headline_hi": result.get("headline_hi"),

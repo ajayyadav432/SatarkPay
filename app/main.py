@@ -15,11 +15,11 @@ from urllib.parse import quote, urlencode
 
 import segno
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
-from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app import config
+from app import auth, config
 from app.analysis.extract import normalise_url
 from app.analysis.pipeline import analyze, analyze_url
 from app.analysis.scoring import level_rank
@@ -89,7 +89,7 @@ async def security_headers(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
     path = request.url.path
-    if path.startswith("/api/") or path in ("/", "/pay", "/merchant", "/how", "/go"):
+    if path.startswith("/api/") or path in ("/", "/pay", "/merchant", "/how", "/go", "/login"):
         response.headers["Cache-Control"] = "no-store"
     elif path.startswith("/static/"):
         response.headers["Cache-Control"] = "no-cache"
@@ -100,10 +100,16 @@ def is_local(request: Request) -> bool:
     return bool(request.client) and request.client.host in config.LOOPBACK
 
 
-def only_this_laptop(request: Request) -> None:
-    """Judges can use the phone screen from their own phones, but only the presenter's laptop runs the show."""
-    if not is_local(request):
-        raise HTTPException(status_code=403, detail="This control only works on the laptop running the demo.")
+ADMIN = Depends(auth.require("admin"))
+ANYONE_LOGGED_IN = Depends(auth.require("user", "merchant", "admin"))
+
+
+class LoginIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    role: Literal["user", "merchant", "admin"]
+    username: str = Field(max_length=40)
+    password: str = Field(max_length=200)
 
 
 # --- request bodies ------------------------------------------------------------------
@@ -193,19 +199,35 @@ def _page(name: str):
     return FileResponse(config.STATIC_DIR / name)
 
 
+def _gated(request: Request, name: str, *roles: str):
+    """Not logged in: to the login page. Logged in with another role: to that role's own home."""
+    role = auth.role_of(request)
+    if role is None:
+        return RedirectResponse("/login", status_code=303)
+    if role not in roles:
+        return RedirectResponse(auth.ACCOUNTS[role]["home"], status_code=303)
+    return _page(name)
+
+
+@app.get("/login", include_in_schema=False)
+def page_login(request: Request):
+    role = auth.role_of(request)
+    return RedirectResponse(auth.ACCOUNTS[role]["home"], status_code=303) if role else _page("login.html")
+
+
 @app.get("/", include_in_schema=False)
-def page_dashboard():
-    return _page("dashboard.html")
+def page_dashboard(request: Request):
+    return _gated(request, "dashboard.html", "admin")
 
 
 @app.get("/pay", include_in_schema=False)
-def page_pay():
-    return _page("pay.html")
+def page_pay(request: Request):
+    return _gated(request, "pay.html", "user", "admin")
 
 
 @app.get("/merchant", include_in_schema=False)
-def page_merchant():
-    return _page("merchant.html")
+def page_merchant(request: Request):
+    return _gated(request, "merchant.html", "merchant", "admin")
 
 
 @app.get("/qr", include_in_schema=False)
@@ -223,6 +245,37 @@ def page_go():
     return _page("go.html")
 
 
+# --- login ---------------------------------------------------------------------------
+
+def _account_view(role: str) -> dict:
+    account = auth.ACCOUNTS[role]
+    return {"role": role, "username": account["username"], "name": account["name"], "home": account["home"]}
+
+
+@app.post("/api/v1/auth/login")
+def api_login(body: LoginIn, response: Response):
+    """A browser gets a cookie that scripts cannot read. The phone app sends the returned token as a Bearer header."""
+    token = auth.login(body.role, body.username, body.password)
+    response.set_cookie(auth.COOKIE, token, max_age=auth.SESSION_SECONDS, httponly=True, samesite="strict", path="/")
+    return {**_account_view(body.role), "token": token}
+
+
+@app.post("/api/v1/auth/logout")
+def api_logout(request: Request, response: Response):
+    auth.logout(auth.token_of(request))
+    response.delete_cookie(auth.COOKIE, path="/")
+    return {"ok": True}
+
+
+@app.get("/api/v1/auth/me")
+def api_me(role: str = ANYONE_LOGGED_IN):
+    return _account_view(role)
+
+
+def _persona_vpas() -> set[str]:
+    return {p["vpa"] for p in PERSONAS.values()}
+
+
 # --- scoring -------------------------------------------------------------------------
 
 def _txn_from(body: PaymentIn) -> dict:
@@ -231,9 +284,14 @@ def _txn_from(body: PaymentIn) -> dict:
 
 
 @app.post("/api/v1/score")
-def api_score(body: PaymentIn, engine: Live = Depends(get_live)):
+def api_score(body: PaymentIn, role: str = ANYONE_LOGGED_IN, engine: Live = Depends(get_live)):
     """Score one payment before it goes through. By default nothing is recorded until /api/v1/outcome says what happened.
-    With record=true the payment counts as done, unless it was stopped."""
+    With record=true the payment counts as done, unless it was stopped.
+    A user pays only from a demo person's account. A merchant can only bring in payments to its own shop."""
+    if role == "user" and body.payer not in _persona_vpas():
+        raise HTTPException(status_code=403, detail="This account can only pay from its own UPI ID.")
+    if role == "merchant" and body.payee != engine.persona_shop():
+        raise HTTPException(status_code=403, detail="This account can only receive payments to its own shop.")
     entry = engine.score_request(_txn_from(body), source="api", explain_always=body.explain)
     result, txn = entry["result"], entry["txn"]
     if body.record:     # an app that only wants it recorded: warned payments go ahead, stopped ones do not
@@ -242,7 +300,7 @@ def api_score(body: PaymentIn, engine: Live = Depends(get_live)):
 
 
 @app.post("/api/v1/outcome")
-def api_outcome(body: DecisionIn, engine: Live = Depends(get_live)):
+def api_outcome(body: DecisionIn, _: str = ANYONE_LOGGED_IN, engine: Live = Depends(get_live)):
     """What the person did after seeing the result. 'reported' also counts as a complaint against the payee.
     A blocked payment cannot be paid, and a warned or held one only after its pause."""
     if not engine.token_ok(body.txn_id, body.token):
@@ -260,7 +318,7 @@ def api_outcome(body: DecisionIn, engine: Live = Depends(get_live)):
 def api_sms(body: SmsIn, request: Request, engine: Live = Depends(get_live)):
     """A message this user just received. It stays in memory for a day and can raise the risk of a payment that follows.
     From another device the pairing code is required, as it changes how someone else's payments are scored."""
-    if not is_local(request) and not _ingest_token_ok(request.headers.get("x-satark-token")):
+    if not auth.role_of(request) and not is_local(request) and not _ingest_token_ok(request.headers.get("x-satark-token")):
         raise HTTPException(status_code=401, detail="Wrong or missing pairing code.")
     user = body.user.strip().lower()
     sig = engine.record_sms(user, body.text, body.sender or "")
@@ -268,19 +326,19 @@ def api_sms(body: SmsIn, request: Request, engine: Live = Depends(get_live)):
 
 
 @app.get("/api/v1/graph")
-def api_graph(vpa: str = Query(max_length=config.MAX_VPA_CHARS), engine: Live = Depends(get_live)):
+def api_graph(vpa: str = Query(max_length=config.MAX_VPA_CHARS), _: str = ADMIN, engine: Live = Depends(get_live)):
     return engine.graph.around(vpa.strip().lower(), engine.world.directory, engine.reports_of)
 
 
 # --- alerts --------------------------------------------------------------------------
 
 @app.get("/api/v1/alerts")
-def api_alerts(status: Literal["new", "confirmed_fraud", "false_alarm"] | None = None, limit: int = Query(default=50, ge=1, le=200)):
+def api_alerts(_: str = ADMIN, status: Literal["new", "confirmed_fraud", "false_alarm"] | None = None, limit: int = Query(default=50, ge=1, le=200)):
     return {"alerts": store.list_alerts(status, limit), "labelled": store.labelled_counts()}
 
 
 @app.get("/api/v1/alerts/{alert_id}")
-def api_alert(alert_id: int):
+def api_alert(alert_id: int, _: str = ADMIN):
     alert = store.get_alert(alert_id)
     if alert is None:
         raise HTTPException(status_code=404, detail="Alert not found.")
@@ -288,7 +346,8 @@ def api_alert(alert_id: int):
 
 
 @app.patch("/api/v1/alerts/{alert_id}")
-def api_alert_update(alert_id: int, body: AlertUpdate, _: None = Depends(only_this_laptop), engine: Live = Depends(get_live)):
+@app.post("/api/v1/alerts/{alert_id}")     # Android's HTTP client has no PATCH
+def api_alert_update(alert_id: int, body: AlertUpdate, _: str = ADMIN, engine: Live = Depends(get_live)):
     """An analyst's decision. These are the labels for the next training. A confirmed scam also counts as a report against the payee."""
     before = store.get_alert(alert_id)
     if before is None:
@@ -326,14 +385,16 @@ _SSE_HEADERS = {"Cache-Control": "no-store", "X-Accel-Buffering": "no"}
 
 
 @app.get("/api/v1/stream")
-async def api_stream(request: Request, engine: Live = Depends(get_live)):
+async def api_stream(request: Request, _: str = ADMIN, engine: Live = Depends(get_live)):
     channel = engine.subscribe_dashboard()
     return StreamingResponse(_events(request, channel, engine), media_type="text/event-stream", headers=_SSE_HEADERS)
 
 
 @app.get("/api/v1/stream/user/{vpa}")
-async def api_stream_user(vpa: str, request: Request, engine: Live = Depends(get_live)):
+async def api_stream_user(vpa: str, request: Request, role: str = ANYONE_LOGGED_IN, engine: Live = Depends(get_live)):
     vpa = vpa.strip().lower()[: config.MAX_VPA_CHARS]
+    if (role == "user" and vpa not in _persona_vpas()) or (role == "merchant" and vpa != engine.persona_shop()):
+        raise HTTPException(status_code=403, detail="This account can only see its own payments.")
     channel = engine.subscribe_phone(vpa)
     for waiting in engine.phone_inbox.get(vpa, ()):     # requests that arrived before this phone connected
         from app.payments.live import _public_txn
@@ -342,31 +403,39 @@ async def api_stream_user(vpa: str, request: Request, engine: Live = Depends(get
 
 
 @app.get("/api/v1/kpis")
-def api_kpis(engine: Live = Depends(get_live)):
+def api_kpis(_: str = ADMIN, engine: Live = Depends(get_live)):
     return engine.snapshot()
 
 
 @app.get("/api/v1/feed")
-def api_feed(limit: int = Query(default=50, ge=1, le=200), engine: Live = Depends(get_live)):
+def api_feed(limit: int = Query(default=50, ge=1, le=200), _: str = ADMIN, engine: Live = Depends(get_live)):
     return {"rows": list(engine.feed)[-limit:]}
+
+
+@app.get("/api/v1/merchant/payments")
+def api_merchant_payments(_: str = Depends(auth.require("merchant", "admin")), engine: Live = Depends(get_live)):
+    """The shop's own payments, newest first. What really arrived is what counts, not a customer's screen."""
+    totals = engine.shop_totals
+    return {"shop": engine.persona_shop(), "name": auth.ACCOUNTS["merchant"]["name"], "received_total": round(totals["received_total"], 2), "received": totals["received"],
+            "not_received": totals["not_received"], "rows": [{k: r[k] for k in ("txn_id", "time", "payer", "amount", "status", "action")} for r in reversed(list(engine.shop_rows)[-50:])]}
 
 
 # --- running the show (laptop only) ---------------------------------------------------
 
 @app.post("/api/v1/sim/start")
-def api_sim_start(_: None = Depends(only_this_laptop), engine: Live = Depends(get_live)):
+def api_sim_start(_: str = ADMIN, engine: Live = Depends(get_live)):
     engine.running = True
     return {"running": True}
 
 
 @app.post("/api/v1/sim/stop")
-def api_sim_stop(_: None = Depends(only_this_laptop), engine: Live = Depends(get_live)):
+def api_sim_stop(_: str = ADMIN, engine: Live = Depends(get_live)):
     engine.running = False
     return {"running": False}
 
 
 @app.post("/api/v1/sim/speed")
-def api_sim_speed(body: SpeedIn, _: None = Depends(only_this_laptop), engine: Live = Depends(get_live)):
+def api_sim_speed(body: SpeedIn, _: str = ADMIN, engine: Live = Depends(get_live)):
     if body.tps not in ALLOWED_TPS:
         raise HTTPException(status_code=422, detail=f"Speed must be one of {ALLOWED_TPS}.")
     engine.tps = body.tps
@@ -374,14 +443,14 @@ def api_sim_speed(body: SpeedIn, _: None = Depends(only_this_laptop), engine: Li
 
 
 @app.post("/api/v1/sim/attack/{name}")
-def api_sim_attack(name: str, _: None = Depends(only_this_laptop), engine: Live = Depends(get_live)):
+def api_sim_attack(name: str, _: str = ADMIN, engine: Live = Depends(get_live)):
     if name not in scenarios.ATTACKS:
         raise HTTPException(status_code=404, detail="Unknown attack.")
     return engine.launch(name)
 
 
 @app.get("/api/v1/demo")
-def api_demo(persona: Literal["sunita", "rahul", "priya"] = "sunita", engine: Live = Depends(get_live)):
+def api_demo(persona: Literal["sunita", "rahul", "priya"] = "sunita", _: str = ANYONE_LOGGED_IN, engine: Live = Depends(get_live)):
     """What the phone screen shows: who you are, ready-made payments and the attacks."""
     me = PERSONAS[persona]
     return {"persona": persona, "me": {**next(p for p in engine.persona_list() if p["key"] == persona), "device": engine.world.users[me["vpa"]].device},
@@ -435,13 +504,13 @@ def api_demo_qr(name: Literal["shop", "qr", "fake_collect", "mule", "phishing"],
 
 
 @app.get("/api/v1/join")
-def api_join():
+def api_join(_: str = ADMIN):
     lan = _lan_address()
     return {"lan": lan, "pay_url": f"{lan}/pay" if lan else None}
 
 
 @app.get("/api/v1/join.svg", include_in_schema=False)
-def api_join_svg():
+def api_join_svg(_: str = ADMIN):
     lan = _lan_address()
     if not lan:
         raise HTTPException(status_code=404, detail="Start with ./run.sh wifi so that phones can join.")

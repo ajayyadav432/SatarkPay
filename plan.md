@@ -398,14 +398,14 @@ Full script in `docs/DEMO_SCRIPT.md`.
 
 ---
 
-## 19. Team (assumed the same four as IGNITE; change if not)
+## 19. Team (roles still to be assigned)
 
 | Person | Owns | Presents |
 |---|---|---|
 | Ajay Yadav | Scorer, policy (`decide_action`), API | Story, architecture, why |
-| Divyansh Shah | Simulator, models, evaluation | Model card, honest numbers |
-| manasvi15-git | Dashboard, alert screen | Product walk-through |
-| gauravpareek-web | Stream, phone and extension link | Runs the live demo |
+| To assign (Abhimanyu2211 or SaloniTrivedi11) | Simulator, models, evaluation | Model card, honest numbers |
+| To assign | Dashboard, alert screen | Product walk-through |
+| To assign | Stream, phone and extension link | Runs the live demo |
 
 ---
 
@@ -444,7 +444,7 @@ dies → a second laptop set up beforehand. Nothing in the demo needs the intern
 
 1. **Are pre-built components allowed?** Unknown. Only the organisers can answer (section 15).
 2. **What are the random-challenge rounds?** Unknown (section 20).
-3. **Same four team members?** Assumed (section 19).
+3. **Team:** Ajay Yadav, Abhimanyu2211 and SaloniTrivedi11, confirmed by Ajay. Roles still to be assigned (section 19).
 
 ---
 
@@ -477,3 +477,4 @@ Every finding that changes the design goes here, with its evidence.
   move was kept and the config points there. Without its models the engine still answers, only worse (Critical 90 became
   High 78), and its copied tests skip silently. A new test fails loudly in that case, and training refuses to start.
 - **30 Oct 2026.** The reused Android app could not scan or check a UPI payment, which is the point of the problem statement. Added QR scanning with CameraX and ML Kit. Seven reused files changed and left the manifest. A real UPI ID has no history here, so the app hides model reasons for it and never says it is safe.
+- **30 Oct 2026.** Added user, merchant and admin logins, enforced by the server for the website and the phone app. This replaces the old rule that only the laptop could run the show, and closes the scoring API that had no login.

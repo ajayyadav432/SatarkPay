@@ -19,9 +19,20 @@ It runs offline on one laptop.
 | Name | GitHub |
 |---|---|
 | Ajay Yadav | [@ajayyadav432](https://github.com/ajayyadav432) |
-| Divyansh Shah | [@Divyanshshah01](https://github.com/Divyanshshah01) |
-| manasvi15-git | [@manasvi15-git](https://github.com/manasvi15-git) |
-| gauravpareek-web | [@gauravpareek-web](https://github.com/gauravpareek-web) |
+| Abhimanyu2211 | [@Abhimanyu2211](https://github.com/Abhimanyu2211) |
+| SaloniTrivedi11 | [@SaloniTrivedi11](https://github.com/SaloniTrivedi11) |
+
+## Logins
+
+There are three kinds of account, on the website and in the phone app. The server enforces what each can do.
+
+| Login | Username | Can use |
+|---|---|---|
+| User | `sunita` | Check and make simulated payments |
+| Merchant | `ramesh` | Its own shop's payments |
+| Admin | `admin` | Dashboard, alerts, attacks, and the other two screens |
+
+`./run.sh` creates the passwords the first time and prints them once. `./run.sh accounts` makes new ones. Only salted hashes are stored, in `.env`, which is never committed. The model card, test QR codes and warning page stay public.
 
 ## Run it
 
@@ -145,7 +156,7 @@ On scams it has seen, XGBoost alone does slightly better than the full system. T
 - **Payee signals need a view across banks.** A single bank cannot see fan-in on another bank's account. That points to a deployment at the network level.
 - **No real UPI integration.** A hackathon cannot get one. The integration point is one API call before the payment is sent.
 - **Kafka is not built.** The problem statement allows a stream simulator, and a stream simulator keeps the demo on one laptop with nothing else to install. The `Bus` class is where Kafka would go. That has not been tested.
-- **The scoring API has no login.** It is a demo for one local network. A real deployment needs authentication and rate limits.
+- **Logins are demo accounts.** There is one account per role, no sign-up, and logins end when the server restarts. It runs over plain http on one local network. A real deployment needs real accounts, https and rate limits on the API.
 - **SMS privacy.** In this demo the laptop reads the SMS. The production design scores it on the phone and sends only the score.
 - **The Android app has been run on one real phone (Samsung SM-E366B, Android 17) over USB.** Connection and its built-in sample SMS worked against this server. QR pictures, the check and the result screens were tested on that phone (`android/app/src/androidTest`). The camera was shown to open, but reading a QR through the lens and a real incoming SMS have not been tested. The extension was run in Chromium against this server.
 - **The "this looks like" label is a best guess.** It named the right scam for 80% of flagged scams in the test. The reasons are exact. The label is not.

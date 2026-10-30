@@ -22,6 +22,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -45,6 +46,16 @@ class PayFlowTest {
 
     @Composable private fun Themed(content: @Composable () -> Unit) {
         SatarkAISMSGuardTheme { Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) { content() } }
+    }
+
+    // The laptop's demo passwords are never in the repo: am instrument -e userPassword ... -e merchantPassword ... -e adminPassword ...
+    private val args = InstrumentationRegistry.getArguments()
+    @org.junit.Before fun logIn() { logInAs("user", "sunita", "userPassword") }
+    @org.junit.After fun endLogin() { SatarkClient.token = null }
+
+    private fun logInAs(role: String, username: String, arg: String) {
+        SatarkClient.token = null
+        SatarkClient.token = SatarkClient.login(store.serverUrl, role, username, args.getString(arg)!!).getString("token")
     }
 
     private fun readAsset(name: String): String? {
@@ -110,7 +121,8 @@ class PayFlowTest {
 
     @Test fun aRealUpiIdIsNeverCalledSafeAndCannotBePaidHere() {
         scanAndCheck("satarkpay_qr_real.png")
-        rule.onNodeWithText("No warning signs found").assertExists()
+        rule.onAllNodesWithText("Looks fine").assertCountEquals(0)
+        rule.onAllNodesWithText("Safe", substring = true).assertCountEquals(0)
         rule.onNodeWithText("This is a real UPI ID", substring = true).performScrollTo().assertExists()
         rule.onAllNodesWithText("Simulate payment").assertCountEquals(0)
         rule.onAllNodesWithText("1 day old", substring = true).assertCountEquals(0)
@@ -124,6 +136,46 @@ class PayFlowTest {
         rule.onNodeWithText("Scan a UPI QR").assertExists()
         Thread.sleep(600)
         instrumentation.uiAutomation.takeScreenshot()?.let { b -> File(app.getExternalFilesDir(null), "scan_frame.png").outputStream().use { b.compress(Bitmap.CompressFormat.PNG, 100, it) } }
+    }
+
+    @Test fun theLoginScreenOffersThreeRolesAndRefusesAWrongPassword() {
+        rule.setContent { Themed { LoginScreen(store, {}) {} } }
+        listOf("User", "Merchant", "Admin").forEach { rule.onNodeWithText(it).assertExists() }
+        rule.onNodeWithText("Merchant").performClick()
+        rule.onNodeWithText("See what really reached your shop.").assertExists()
+        rule.onNodeWithText("Username").performTextInput("ramesh")
+        rule.onNodeWithText("Password").performTextInput("definitely-wrong")
+        screenshot("login")
+        var message = ""
+        try { SatarkClient.login(store.serverUrl, "merchant", "ramesh", "definitely-wrong") } catch (e: IllegalStateException) { message = e.message!! }
+        assertEquals("Wrong username or password.", message)
+    }
+
+    @Test fun aMerchantSeesItsOwnPaymentsAndNotTheAdminData() {
+        logInAs("merchant", "ramesh", "merchantPassword")
+        var refused = false
+        try { SatarkClient.kpis(store.serverUrl) } catch (e: IllegalStateException) { refused = e.message!!.contains("cannot do that") }
+        assertTrue("a merchant must not read admin numbers", refused)
+        rule.setContent { Themed { MerchantHome(store, {}, {}) } }
+        rule.waitUntil(10000) { rule.onAllNodes(hasText("Ramesh Kirana Store")).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText("A customer pays (simulated)").performClick()
+        rule.waitUntil(15000) { rule.onAllNodes(hasText("Received")).fetchSemanticsNodes().size > 1 }
+        screenshot("merchant")
+    }
+
+    @Test fun anAdminSeesTheNumbersAndCanLaunchAnAttack() {
+        logInAs("admin", "admin", "adminPassword")
+        rule.setContent { Themed { AdminHome(store, {}, {}) } }
+        rule.waitUntil(10000) { rule.onAllNodes(hasText("Scored")).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText("Mule ring").performScrollTo().performClick()
+        rule.waitUntil(30000) { rule.onAllNodes(hasText("Confirm scam")).fetchSemanticsNodes().isNotEmpty() }
+        screenshot("admin")
+    }
+
+    @Test fun aUserCannotReadAdminNumbers() {
+        var refused = false
+        try { SatarkClient.alerts(store.serverUrl) } catch (e: IllegalStateException) { refused = e.message!!.contains("cannot do that") }
+        assertTrue(refused)
     }
 
     @Test fun aLinkQrIsCheckedAsAPage() {

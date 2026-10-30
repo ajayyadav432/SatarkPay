@@ -16,6 +16,13 @@ import pytest
 playwright_api = pytest.importorskip("playwright.sync_api", reason="playwright is not installed")
 ROOT = Path(__file__).resolve().parent.parent
 pytestmark = pytest.mark.e2e
+E2E_PASSWORD = "e2e-test-password"
+USERNAMES = {"user": "sunita", "merchant": "ramesh", "admin": "admin"}
+
+
+def log_in(ctx, base, role):
+    r = ctx.request.post(base + "/api/v1/auth/login", data={"role": role, "username": USERNAMES[role], "password": E2E_PASSWORD})
+    assert r.status == 200, r.text()
 
 
 def _free_port() -> int:
@@ -27,7 +34,9 @@ def _free_port() -> int:
 @pytest.fixture(scope="module")
 def base(tmp_path_factory):
     port = _free_port()
-    env = dict(os.environ, SATARKPAY_DB=str(tmp_path_factory.mktemp("e2e") / "e2e.db"), SATARKPAY_LIVE_USERS="1200", SATARKPAY_AUTOSTART="1")
+    from app import auth
+    hashed = auth.hash_password(E2E_PASSWORD)
+    env = dict(os.environ, SATARK_PASS_USER=hashed, SATARK_PASS_MERCHANT=hashed, SATARK_PASS_ADMIN=hashed, SATARKPAY_DB=str(tmp_path_factory.mktemp("e2e") / "e2e.db"), SATARKPAY_LIVE_USERS="1200", SATARKPAY_AUTOSTART="1")
     proc = subprocess.Popen([sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(port), "--log-level", "warning"],
                             cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     url = f"http://127.0.0.1:{port}"
@@ -69,8 +78,9 @@ def problems():
 
 
 @pytest.fixture()
-def desktop(browser, problems):
+def desktop(browser, base, problems):
     ctx = browser.new_context(viewport={"width": 1440, "height": 900})
+    log_in(ctx, base, "admin")
     page = ctx.new_page()
     page.on("pageerror", lambda e: problems.append(str(e)))
     page.on("console", lambda m: problems.append(m.text) if m.type == "error" else None)
@@ -79,8 +89,9 @@ def desktop(browser, problems):
 
 
 @pytest.fixture()
-def phone(browser, problems):
+def phone(browser, base, problems):
     ctx = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+    log_in(ctx, base, "admin")
     page = ctx.new_page()
     page.on("pageerror", lambda e: problems.append(str(e)))
     page.on("console", lambda m: problems.append(m.text) if m.type == "error" else None)
@@ -252,7 +263,7 @@ def test_the_merchant_sees_what_really_arrived(desktop, base, problems):
     desktop.wait_for_timeout(600)
     desktop.click("#btn-customer")
     desktop.wait_for_selector("#rows tr", timeout=15000)
-    assert desktop.inner_text("#n") == "1" and desktop.inner_text("#total") != "₹0"
+    assert int(desktop.inner_text("#n")) >= 1 and desktop.inner_text("#total") != "₹0"     # the live stream may pay this shop too
     assert "Received" in desktop.inner_text("#rows")
     assert not problems, problems
 
@@ -339,3 +350,42 @@ def test_the_test_qr_page_shows_a_readable_code_for_each_case(desktop, base, pro
     sizes = desktop.eval_on_selector_all("[data-qr] img", "els => els.map(e => e.naturalWidth)")
     assert len(sizes) == 5 and all(w > 0 for w in sizes)
     assert not problems, problems
+
+
+@pytest.mark.parametrize("role,home", [("user", "/pay"), ("merchant", "/merchant"), ("admin", "/")])
+def test_each_login_lands_on_its_own_screen(browser, base, role, home):
+    ctx = browser.new_context()
+    page = ctx.new_page()
+    page.goto(base + "/")
+    page.wait_for_url("**/login")
+    page.click(f"[data-role={role}]")
+    page.fill("#username", USERNAMES[role])
+    page.fill("#password", E2E_PASSWORD)
+    page.click("#btn-login")
+    page.wait_for_url(base + home)
+    page.wait_for_selector("#btn-logout")
+    page.click("#btn-logout")
+    page.wait_for_url("**/login")
+    ctx.close()
+
+
+def test_a_wrong_password_shows_a_message(browser, base):
+    ctx = browser.new_context()
+    page = ctx.new_page()
+    page.goto(base + "/login")
+    page.fill("#username", "sunita")
+    page.fill("#password", "wrong")
+    page.click("#btn-login")
+    page.wait_for_selector("#login-error:not(.hidden)")
+    assert "Wrong username or password" in page.inner_text("#login-error")
+    ctx.close()
+
+
+def test_a_user_cannot_open_the_dashboard(browser, base):
+    ctx = browser.new_context()
+    log_in(ctx, base, "user")
+    page = ctx.new_page()
+    page.goto(base + "/")
+    page.wait_for_url(base + "/pay")
+    assert ctx.request.get(base + "/api/v1/kpis").status == 403
+    ctx.close()

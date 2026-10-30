@@ -86,12 +86,22 @@
   }
 
   function topbar(active) {
-    const links = [["/", "Dashboard"], ["/pay", "Phone"], ["/merchant", "Merchant"], ["/qr", "Test QR codes"], ["/how", "How it works"]];
+    const OWN = { admin: [["/", "Dashboard"], ["/pay", "Phone"], ["/merchant", "Merchant"]], user: [["/pay", "Phone"]], merchant: [["/merchant", "Merchant"]] };
+    const nav = h("nav", { class: "nav", "aria-label": "Screens" });
+    const account = h("div", { class: "account" });
+    const paint = (me) => {
+      const links = [...(me ? OWN[me.role] : []), ["/qr", "Test QR codes"], ["/how", "How it works"]];
+      nav.replaceChildren(...links.map(([href, label]) =>
+        h("a", { href, class: href === active ? "nav-link active" : "nav-link", "aria-current": href === active ? "page" : null, text: label })));
+      account.replaceChildren(me
+        ? h("button", { class: "btn btn-small", id: "btn-logout", type: "button", text: "Log out", title: me.name, onclick: () => sendJSON("/api/v1/auth/logout", {}).finally(() => { location.href = "/login"; }) })
+        : h("a", { class: "btn btn-small", id: "link-login", href: "/login", text: "Log in" }));
+    };
+    paint(null);
+    fetch("/api/v1/auth/me", { headers: { Accept: "application/json" } }).then((r) => (r.ok ? r.json() : null)).then(paint).catch(() => {});
     return h("header", { class: "topbar" },
       h("a", { class: "brand", href: "/" }, h("img", { src: "/static/logo.svg", alt: "", width: "30", height: "30" }), h("span", { text: "SatarkPay" })),
-      h("nav", { class: "nav", "aria-label": "Screens" }, links.map(([href, label]) =>
-        h("a", { href, class: href === active ? "nav-link active" : "nav-link", "aria-current": href === active ? "page" : null, text: label }))),
-      themeButton());
+      nav, account, themeButton());
   }
 
   // One tooltip for the page. The value leads, the label follows. Everything it shows can also be read without it.
@@ -119,6 +129,7 @@
 
   async function getJSON(url) {
     const res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (res.status === 401) { location.href = "/login"; throw new Error("Please log in."); }
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || "Request failed");
     return res.json();
   }
@@ -126,6 +137,7 @@
   async function sendJSON(url, body, method) {
     const res = await fetch(url, { method: method || "POST", headers: { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
     const data = await res.json().catch(() => ({}));
+    if (res.status === 401 && !url.endsWith("/auth/login")) { location.href = "/login"; throw new Error("Please log in."); }
     if (!res.ok) {
       const d = data.detail;
       throw new Error(Array.isArray(d) ? d.map((x) => (x.loc || []).slice(-1)[0] + ": " + x.msg).join("; ") : d || "Request failed");

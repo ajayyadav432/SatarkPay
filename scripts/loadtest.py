@@ -26,6 +26,10 @@ os.environ["SATARKPAY_AUTOSTART"] = "0"
 
 import httpx      # noqa: E402
 
+from app import auth  # noqa: E402
+
+LOAD_PASSWORD = "load-test-only"
+
 from app import config                 # noqa: E402
 from app.payments import store         # noqa: E402
 from app.payments.live import Live     # noqa: E402
@@ -62,6 +66,7 @@ def run_client(args: tuple) -> list[tuple[float, bool]]:
     start, count, users, shops = args
     out = []
     with httpx.Client(timeout=15) as c:
+        assert c.post(URL + "/api/v1/auth/login", json={"role": "admin", "username": "admin", "password": LOAD_PASSWORD}).status_code == 200
         for i in range(start, start + count):
             t0 = time.perf_counter()
             r = c.post(URL + "/api/v1/score", json=payload(i, users, shops))
@@ -83,7 +88,7 @@ def main_load() -> None:
     print(f"Engine: {scored:,} payments in {seconds:.1f} s = {scored / seconds:,.0f} per second, scoring p95 {pct(engine_lat, 0.95)} ms", flush=True)
     users, shops = users_and_shops()
 
-    env = dict(os.environ, SATARK_PORT=str(PORT))
+    env = dict(os.environ, SATARK_PORT=str(PORT), SATARK_PASS_ADMIN=auth.hash_password(LOAD_PASSWORD))
     server = subprocess.Popen([sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(PORT), "--log-level", "warning"], cwd=ROOT, env=env)
     try:
         for _ in range(240):

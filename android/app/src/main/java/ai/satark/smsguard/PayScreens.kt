@@ -285,6 +285,9 @@ fun ResultScreen(check: PayCheck, store: Store, onDone: () -> Unit) {
                     }
                 }
             }
+            if (reasons.isEmpty() && action != "ALLOW") Text(
+                if (hindi) "इस भुगतान का तरीका आपके सामान्य भुगतानों से अलग है।" else "This payment does not look like your usual payments.",
+                fontSize = 14.sp, color = TextMain)
             advice.forEach { Text(it, fontSize = 14.sp, color = TextSoft) }
             if (!simulated) Text(
                 if (hindi) "यह असली UPI ID है। SatarkPay के पास सिर्फ़ सिम्युलेटेड भुगतानों का इतिहास है, इसलिए यह सिर्फ़ ID, राशि और नोट देखता है। यह गारंटी नहीं है कि यह सुरक्षित है।"

@@ -360,3 +360,16 @@ details.table-view summary { cursor: pointer; color: var(--muted); font-weight: 
 /* Test QR codes: always black on white, or a camera cannot read them. */
 .qr-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
 .qr-grid img { display: block; width: 100%; max-width: 280px; height: auto; margin: 8px auto; background: #fff; border-radius: 8px; }
+
+/* Login */
+.login-page { display: grid; place-items: center; padding: 32px 16px; }
+.login-card { width: 100%; max-width: 420px; }
+.login-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.login-brand h1 { font-size: 1.4rem; margin: 0; }
+.login-roles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface-2); }
+.login-role { padding: 10px 4px; border: 0; border-radius: 9px; background: transparent; color: var(--ink-2); font: inherit; font-weight: 600; cursor: pointer; }
+.login-role.active { background: var(--accent); color: var(--accent-ink); }
+.login-field { display: block; margin-top: 12px; font-weight: 600; font-size: 0.9rem; }
+.login-field .input { display: block; width: 100%; margin-top: 4px; }
+.login-go { width: 100%; margin-top: 16px; }
+.account { display: flex; align-items: center; }

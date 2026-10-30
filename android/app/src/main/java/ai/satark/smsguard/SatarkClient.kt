@@ -9,6 +9,45 @@ import java.net.URLEncoder
 object SatarkClient {
     private const val TIMEOUT_MS = 8000
 
+    /** The login ended, for example because the laptop's server restarted. */
+    class LoginNeeded(message: String) : IllegalStateException(message)
+
+    /** The session token. It goes only to the address the person set. */
+    @Volatile var token: String? = null
+
+    /** Checks the password on the laptop. Returns the role, name and session token. */
+    fun login(server: String, role: String, username: String, password: String): JSONObject {
+        val body = JSONObject().put("role", role).put("username", username).put("password", password)
+        return request("$server/api/v1/auth/login", "POST", null, body.toString())
+    }
+
+    fun logout(server: String) { request("$server/api/v1/auth/logout", "POST", null, "{}") }
+
+    /** Still logged in? Throws LoginNeeded if not. */
+    fun me(server: String): JSONObject = request("$server/api/v1/auth/me", "GET", null, null)
+
+    fun merchantPayments(server: String): JSONObject = request("$server/api/v1/merchant/payments", "GET", null, null)
+
+    /** A simulated customer pays this shop, for the demo. */
+    fun customerPays(server: String, shop: String) {
+        val me = request("$server/api/v1/demo?persona=rahul", "GET", null, null).getJSONObject("me")
+        val body = JSONObject().put("payer", me.getString("vpa")).put("payee", shop).put("amount", (40..500).random()).put("kind", "QR")
+            .put("device", me.getString("device")).put("city", me.getInt("city")).put("balance", me.getDouble("balance")).put("record", true)
+        request("$server/api/v1/score", "POST", null, body.toString())
+    }
+
+    fun kpis(server: String): JSONObject = request("$server/api/v1/kpis", "GET", null, null)
+
+    fun alerts(server: String) = request("$server/api/v1/alerts?limit=30", "GET", null, null).getJSONArray("alerts")
+
+    fun labelAlert(server: String, id: Int, status: String) {
+        request("$server/api/v1/alerts/$id", "POST", null, JSONObject().put("status", status).toString())
+    }
+
+    fun attack(server: String, name: String) { request("$server/api/v1/sim/attack/$name", "POST", null, "{}") }
+
+    fun simRun(server: String, start: Boolean) { request("$server/api/v1/sim/" + if (start) "start" else "stop", "POST", null, "{}") }
+
     /** Sends one SMS to /api/ingest and returns SatarkAI's verdict. Throws on network or server errors. */
     fun checkSms(server: String, code: String, sender: String, text: String, ref: String): JSONObject {
         val body = JSONObject()
@@ -49,6 +88,7 @@ object SatarkClient {
             conn.connectTimeout = TIMEOUT_MS
             conn.readTimeout = TIMEOUT_MS
             if (code != null) conn.setRequestProperty("X-Satark-Token", code)
+            token?.let { conn.setRequestProperty("Authorization", "Bearer $it") }
             if (body != null) {
                 conn.doOutput = true
                 conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
@@ -59,6 +99,7 @@ object SatarkClient {
             val text = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
             if (status !in 200..299) {
                 val detail = runCatching { JSONObject(text).optString("detail") }.getOrNull()
+                if (status == 401 && detail == "Please log in.") throw LoginNeeded(detail)
                 throw IllegalStateException(detail?.ifEmpty { null } ?: "SatarkAI answered $status")
             }
             return JSONObject(text)

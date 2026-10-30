@@ -2,6 +2,7 @@
 # SatarkPay - one command to run, test or retrain.
 #   ./run.sh            start the app on http://localhost:8000
 #   ./run.sh wifi       start so that phones on the same Wi-Fi or hotspot can join (prints the address and pairing code)
+#   ./run.sh accounts   make new passwords for the user, merchant and admin logins
 #   ./run.sh test       run all tests
 #   ./run.sh train      rebuild the simulated world and retrain both models (about 2 minutes)
 #   ./run.sh evaluate   measure everything again and write models/metrics.json (about 4 minutes)
@@ -27,11 +28,16 @@ HOST="${SATARK_HOST:-127.0.0.1}"
 PORT="${SATARK_PORT:-8000}"
 
 case "${1:-serve}" in
+  accounts)
+    exec "$PY" -m app.auth --reset
+    ;;
   serve)
+    "$PY" -m app.auth
     echo "SatarkPay is starting on http://${HOST}:${PORT}  (Ctrl+C to stop)"
     exec "$PY" -m uvicorn app.main:app --host "$HOST" --port "$PORT"
     ;;
   wifi)
+    "$PY" -m app.auth
     # The pairing code lets the SatarkAI SMS Guard app talk to this laptop. It stays in .env, which is never committed.
     if ! grep -qs "^SATARK_TOKEN=" .env; then
       echo "SATARK_TOKEN=$("$PY" -c "import secrets; print(secrets.token_urlsafe(9))")" >> .env
@@ -75,7 +81,7 @@ case "${1:-serve}" in
     done
     ;;
   *)
-    echo "Usage: ./run.sh [serve|wifi|test|train|evaluate|paysim|loadtest|phone]"
+    echo "Usage: ./run.sh [serve|wifi|accounts|test|train|evaluate|paysim|loadtest|phone]"
     exit 2
     ;;
 esac

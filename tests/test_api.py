@@ -484,17 +484,13 @@ def _other_device(path, method="post", **kw):
         return getattr(c, method)(path, **kw)
 
 
-@pytest.mark.parametrize("path", ["/api/v1/sim/start", "/api/v1/sim/stop", "/api/v1/sim/attack/fake_collect"])
-def test_other_devices_cannot_run_the_show(path):
-    assert _other_device(path).status_code == 403
+@pytest.mark.parametrize("path", ["/api/v1/sim/start", "/api/v1/sim/stop", "/api/v1/sim/attack/fake_collect", "/api/v1/score"])
+def test_without_a_login_nothing_runs(path):
+    assert _other_device(path).status_code in (401, 422)
 
 
-def test_other_devices_cannot_label_alerts():
-    assert _other_device("/api/v1/alerts/1", method="patch", json={"status": "false_alarm"}).status_code == 403
-
-
-def test_other_devices_can_use_the_phone_screen():
-    assert _other_device("/api/v1/score", json=body()).status_code == 200
+def test_without_a_login_alerts_cannot_be_labelled():
+    assert _other_device("/api/v1/alerts/1", method="patch", json={"status": "false_alarm"}).status_code == 401
 
 
 def test_other_devices_need_the_pairing_code_for_sms():

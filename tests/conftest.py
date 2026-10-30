@@ -1,4 +1,6 @@
 """Shared fixtures. Every test run uses its own temporary database, never the real alerts."""
+import base64
+import hashlib
 import os
 import sys
 import tempfile
@@ -12,6 +14,10 @@ _TMP = tempfile.mkdtemp(prefix="satarkpay-test-")
 os.environ["SATARKPAY_DB"] = str(Path(_TMP) / "test.db")
 os.environ["SATARK_TOKEN"] = "test-pairing-code"
 os.environ["SATARKPAY_AUTOSTART"] = "0"
+TEST_PASSWORD = "test-password"
+_salt = b"0123456789abcdef"
+_hash = "scrypt." + base64.urlsafe_b64encode(_salt).decode() + "." + base64.urlsafe_b64encode(hashlib.scrypt(TEST_PASSWORD.encode(), salt=_salt, n=2**14, r=8, p=1)).decode()
+os.environ["SATARK_PASS_USER"] = os.environ["SATARK_PASS_MERCHANT"] = os.environ["SATARK_PASS_ADMIN"] = _hash
 
 import pytest  # noqa: E402
 
@@ -67,6 +73,7 @@ def api(engine):
                 kw["json"] = {**body, "token": engine.pending.get(body["txn_id"], {}).get("token", "none")}
             return super().post(url, **kw)
 
-    with WithToken(app, base_url="http://127.0.0.1:8000", client=("127.0.0.1", 50000)) as c:     # as if on the laptop running the demo
+    with WithToken(app, base_url="http://127.0.0.1:8000", client=("127.0.0.1", 50000)) as c:
+        assert c.post("/api/v1/auth/login", json={"role": "admin", "username": "admin", "password": TEST_PASSWORD}).status_code == 200     # as if on the laptop running the demo
         yield c
     engine.running = False

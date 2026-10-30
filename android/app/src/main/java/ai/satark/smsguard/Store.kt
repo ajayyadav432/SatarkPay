@@ -16,6 +16,15 @@ class Store(context: Context) {
         get() = prefs.getString("code", "") ?: ""
         set(v) = prefs.edit().putString("code", v.trim()).apply()
 
+    val sessionToken: String? get() = prefs.getString("session_token", null)
+    val sessionRole: String? get() = prefs.getString("session_role", null)
+    val sessionName: String get() = prefs.getString("session_name", "") ?: ""
+
+    fun saveSession(token: String, role: String, name: String) =
+        prefs.edit().putString("session_token", token).putString("session_role", role).putString("session_name", name).apply()
+
+    fun clearSession() = prefs.edit().remove("session_token").remove("session_role").remove("session_name").apply()
+
     fun recent(): List<Checked> {
         val arr = JSONArray(prefs.getString("recent", "[]"))
         return (0 until arr.length()).map { Checked.fromJson(arr.getJSONObject(it)) }

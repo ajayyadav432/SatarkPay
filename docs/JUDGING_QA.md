@@ -108,6 +108,8 @@ Where the words give it away, the other layers save it. Where only behaviour doe
 
 **Does the phone app scan real UPI QR codes?** Yes, it reads the QR on the phone and checks the payment on the laptop. It does not pay. A real UPI ID has no history here, so only the ID, the amount and the note are checked, and the app tells the person that this is not a guarantee.
 
+**Who can see what?** Three logins: user, merchant and admin. The server checks every request, so a user who calls the admin API directly gets refused. They are demo accounts: one for each role, with hashed passwords.
+
 **Why no Kafka?** The PS allows a simple stream simulator, and a stream simulator keeps the demo on one laptop with nothing else to install. A small `Bus` class is where Kafka would go. That has not been tested, and we do not claim it.
 
 **How fast is it?** On this laptop, one server process: p50 2.27 ms, p95 5.06 ms, p99 6.98 ms over HTTP; 483 requests per second with 4 clients. Alerts take longer because they compute SHAP (p95 7.36 ms). It says nothing about a bank's production load.
@@ -132,14 +134,14 @@ Where the words give it away, the other layers save it. Where only behaviour doe
 
 ## Who answers what
 
-Assumed the same four as IGNITE. Change this if the team is different. Everyone should know the one-sentence pitch, the formula, why no LLM, and that the data is synthetic.
+Everyone should know the one-sentence pitch, the formula, why no LLM, and that the data is synthetic.
 
 | Person | Owns | Read these | Must explain without notes |
 |---|---|---|---|
 | Ajay Yadav | Story, architecture, policy | `app/payments/scorer.py`, `policy.py`, `rules.py`, `app/main.py` | The formula; why a model alone cannot block; the real-world false-alarm number |
-| Divyansh Shah | Simulator, models, evaluation | `ml/simulate.py`, `train.py`, `evaluate.py`, `app/payments/features.py`, `models.py` | The two leaks; leave-one-out; PaySim's shortcut; why XGBoost beats the full system on known scams |
-| manasvi15-git | Dashboard, alert screen | `app/static/`, `app/payments/explain.py` | What each part of the screen means; how a reason is built from SHAP; why no text can run code |
-| gauravpareek-web | Stream, sensors, running the demo | `app/payments/live.py`, `scenarios.py`, `graph.py`, `android/`, `extension/` | How stopping a payment changes the simulation; the failure plan; why no Kafka |
+| To assign | Simulator, models, evaluation | `ml/simulate.py`, `train.py`, `evaluate.py`, `app/payments/features.py`, `models.py` | The two leaks; leave-one-out; PaySim's shortcut; why XGBoost beats the full system on known scams |
+| To assign | Dashboard, alert screen | `app/static/`, `app/payments/explain.py` | What each part of the screen means; how a reason is built from SHAP; why no text can run code |
+| To assign | Stream, sensors, running the demo | `app/payments/live.py`, `scenarios.py`, `graph.py`, `android/`, `extension/` | How stopping a payment changes the simulation; the failure plan; why no Kafka |
 
 ## Sources
 

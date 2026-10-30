@@ -98,6 +98,7 @@ private sealed class Screen {
     data object Home : Screen()
     data object Scan : Screen()
     data object Connection : Screen()
+    data object Login : Screen()
     data class Review(val qr: Scanned.Upi?) : Screen()
     data class Result(val check: PayCheck) : Screen()
     data class Link(val url: String) : Screen()
@@ -107,8 +108,30 @@ private sealed class Screen {
 private fun App(shared: Uri?) {
     val context = LocalContext.current
     val store = remember { Store(context) }
-    var screen by remember { mutableStateOf<Screen>(Screen.Home) }
+    var screen by remember { mutableStateOf<Screen>(if (store.sessionToken != null) Screen.Home else Screen.Login) }
+    var role by remember { mutableStateOf(store.sessionRole) }
     var note by remember { mutableStateOf("") }
+    remember { SatarkClient.token = store.sessionToken }
+    fun endSession() {
+        store.clearSession()
+        SatarkClient.token = null
+        role = null
+        screen = Screen.Login
+    }
+    fun logOut() {
+        val server = store.serverUrl
+        Thread { runCatching { SatarkClient.logout(server) }; SatarkClient.token = null }.start()
+        store.clearSession()
+        role = null
+        screen = Screen.Login
+    }
+    // The server forgets logins when it restarts, so check this one is still good.
+    LaunchedEffect(Unit) {
+        if (store.sessionToken != null) Thread {
+            val ended = runCatching { SatarkClient.me(store.serverUrl) }.exceptionOrNull() is SatarkClient.LoginNeeded
+            if (ended) (context as? ComponentActivity)?.runOnUiThread { endSession() }
+        }.start()
+    }
     fun show(raw: String) {
         when (val q = UpiQr.parse(raw)) {
             is Scanned.Upi -> screen = Screen.Review(q)
@@ -119,14 +142,21 @@ private fun App(shared: Uri?) {
     fun showPicture(uri: Uri) {
         readQrFromImage(context, uri) { text -> if (text != null) show(text) else { note = "No QR code found in that picture."; screen = Screen.Home } }
     }
-    LaunchedEffect(shared) { if (shared != null) showPicture(shared) }
+    LaunchedEffect(shared, role) { if (shared != null && role == "user") showPicture(shared) }
     val home = { screen = Screen.Home }
-    BackHandler(screen != Screen.Home) { if (screen !is Screen.Result) home() }
+    BackHandler(screen != Screen.Home && screen != Screen.Login) {
+        if (screen !is Screen.Result) { if (store.sessionToken != null) home() else screen = Screen.Login }
+    }
     when (val s = screen) {
-        Screen.Home -> HomeScreen(store, note, onScan = { note = ""; screen = Screen.Scan }, onEnter = { note = ""; screen = Screen.Review(null) },
-            onPicture = { note = ""; showPicture(it) }, onConnection = { screen = Screen.Connection })
+        Screen.Login -> LoginScreen(store, onConnection = { screen = Screen.Connection }) { role = store.sessionRole; screen = Screen.Home }
+        Screen.Home -> when (role) {
+            "merchant" -> MerchantHome(store, ::logOut, ::endSession)
+            "admin" -> AdminHome(store, ::logOut, ::endSession)
+            else -> HomeScreen(store, note, onScan = { note = ""; screen = Screen.Scan }, onEnter = { note = ""; screen = Screen.Review(null) },
+                onPicture = { note = ""; showPicture(it) }, onConnection = { screen = Screen.Connection }, onLogout = ::logOut)
+        }
         Screen.Scan -> ScanScreen(home, ::show, ::showPicture)
-        Screen.Connection -> ConnectionScreen(store, home)
+        Screen.Connection -> ConnectionScreen(store) { screen = if (store.sessionToken != null) Screen.Home else Screen.Login }
         is Screen.Review -> ReviewScreen(s.qr, store, home) { screen = Screen.Result(it) }
         is Screen.Result -> ResultScreen(s.check, store, home)
         is Screen.Link -> LinkScreen(s.url, store, home)
@@ -148,7 +178,7 @@ private fun permissionsNeeded(): Array<String> =
     else arrayOf(Manifest.permission.RECEIVE_SMS)
 
 @Composable
-private fun HomeScreen(store: Store, note: String, onScan: () -> Unit, onEnter: () -> Unit, onPicture: (Uri) -> Unit, onConnection: () -> Unit) {
+private fun HomeScreen(store: Store, note: String, onScan: () -> Unit, onEnter: () -> Unit, onPicture: (Uri) -> Unit, onConnection: () -> Unit, onLogout: () -> Unit) {
     val context = LocalContext.current
     var recent by remember { mutableStateOf(store.recent()) }
     var online by remember { mutableStateOf<Boolean?>(null) }
@@ -182,6 +212,8 @@ private fun HomeScreen(store: Store, note: String, onScan: () -> Unit, onEnter: 
                 Spacer(Modifier.width(10.dp))
                 Text("SatarkPay", fontWeight = FontWeight.Bold, fontSize = 24.sp, color = TextMain, modifier = Modifier.weight(1f))
                 ConnectionPill(online, onConnection)
+                Spacer(Modifier.width(8.dp))
+                LogoutButton(onLogout)
             }
         }
         item {

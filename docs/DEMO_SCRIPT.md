@@ -11,6 +11,7 @@ Live numbers change with every run, so read them off the screen. Do not memorise
 - [ ] Phone on the same Wi-Fi or hotspot, at `http://<laptop-ip>:8000/pay`, showing Sunita ji, in Hindi if the room would like that.
 - [ ] A second tab on the laptop at `/how`.
 - [ ] Restart the server just before going up, so the numbers on screen start from zero.
+- [ ] Log in: admin on the laptop, user on the phone. `./run.sh accounts` makes new passwords if they are lost.
 - [ ] Optional: the SatarkPay app on an Android phone, with `http://localhost:8000/qr` open on the laptop. Scan "Scan to receive" to show a scam stopped live.
 - [ ] Optional: the same app, paired, with SMS allowed, and a teammate ready to send a scam SMS.
 
@@ -37,7 +38,7 @@ Live numbers change with every run, so read them off the screen. Do not memorise
 
 **3:00 Beat the model (hand it to the judges).** "Scan this QR code and play the scammer. Write the note, pick the UPI ID, choose the amount." Then let them try. Small amounts with innocent notes do get through, for example ₹30 by QR. Say so calmly: "Yes, that gets through, and that is deliberate. Stopping a ₹30 payment costs more trust than it saves."
 
-**3:40 The honest numbers (Divyansh).** Switch to `/how`.
+**3:40 The honest numbers.** Switch to `/how`.
 - "Everything is synthetic, and we wrote the simulator. How it does on real payments is unknown. We say that first."
 - *Scams it has never seen*: "We trained with no fake collects at all. XGBoost alone caught 7%. The full system caught 81%. That is why there are four layers."
 - *Why accuracy is the wrong number*: "A model that never flags anything is 99.999% accurate. So we measure recall at a fixed false-alarm budget."
