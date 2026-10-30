@@ -425,3 +425,95 @@ def test_there_is_no_admin_sign_up_on_the_website(browser, base):
     assert "cannot be created" in page.inner_text("#switch-text")
     ctx.close()
 
+
+
+def _qr_file(tmp_path, text):
+    import segno
+    path = tmp_path / "qr.png"
+    segno.make(text, error="m").save(path, kind="png", scale=8, border=4)
+    return str(path)
+
+
+def test_a_scanned_photo_is_checked_step_by_step_before_any_payment(phone, base, problems, tmp_path):
+    open_phone(phone, base)
+    phone.set_input_files("#scan-file", _qr_file(tmp_path, "upi://pay?pa=refund.helpdesk@simbank&pn=Refund&am=2999&tn=Scan%20to%20receive%20refund"))
+    phone.wait_for_selector("#stages")
+    assert phone.locator(".stage-bar[role=progressbar]").count() == 1
+    phone.wait_for_selector("#verdict")
+    assert phone.locator("#verdict").get_attribute("data-action") != "ALLOW"
+    assert not problems, problems
+
+
+def test_a_qr_without_an_amount_asks_for_one_and_other_codes_are_refused(phone, base, problems, tmp_path):
+    open_phone(phone, base)
+    phone.set_input_files("#scan-file", _qr_file(tmp_path, "upi://pay?pa=someone@simbank"))
+    phone.wait_for_selector("#qr-amount")
+    phone.fill("#qr-amount", "150")
+    phone.click("#qr-go")
+    phone.wait_for_selector("#verdict")
+    open_phone(phone, base)
+    phone.set_input_files("#scan-file", _qr_file(tmp_path, "just some words"))
+    phone.wait_for_selector("#ready-error")
+    assert "not a UPI" in phone.inner_text("#ready-error")
+    assert not problems, problems
+
+
+@pytest.mark.parametrize("position,sample", [(3, "ঀ"), (4, "ऀ"), (5, "஀"), (6, "ఀ")])
+def test_a_decision_reads_in_each_language(phone, base, problems, position, sample):
+    open_phone(phone, base)
+    phone.click(f"#lang button:nth-child({position})")
+    phone.click("[data-scenario=fake_collect]")
+    phone.wait_for_selector("#verdict")
+    low, high = ord(sample), ord(sample) + 127
+    for selector in ("#verdict-title", "#reasons", "#btn-report"):
+        assert any(low <= ord(ch) <= high for ch in phone.inner_text(selector)), selector
+    phone.click("#lang button:nth-child(1)")
+    assert not problems, problems
+
+
+def test_the_feed_warns_and_an_admin_blocks(browser, base, problems):
+    ctx = browser.new_context(viewport={"width": 390, "height": 800})
+    page = ctx.new_page()
+    page.on("pageerror", lambda e: problems.append(str(e)))
+    page.goto(base + "/feed")
+    page.wait_for_selector("#feed-login")
+    log_in(ctx, base, "user")
+    page.goto(base + "/feed")
+    page.fill("#post-payee", "feed.scammer@simbank")
+    page.fill("#post-body", "They said my KYC had expired and asked for a payment. Call 9876543210.")
+    page.click("#post-go")
+    post = page.locator(".feed-post").first
+    post.wait_for()
+    assert "9876543210" not in post.inner_text()
+    post.locator(".vote").first.click()
+    page.wait_for_selector(".vote.on")
+    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+    ctx.close()
+    admin = browser.new_context()
+    log_in(admin, base, "admin")
+    page = admin.new_page()
+    page.goto(base + "/feed")
+    row = page.locator("#admin-panel .admin-row", has_text="feed.scammer@simbank").first
+    row.locator("input").fill("Checked the reports")
+    row.locator("button").click()
+    page.locator("#admin-panel button", has_text="Unblock").first.wait_for()
+    assert page.locator(".pill-block").count() >= 1
+    admin.close()
+    assert not problems, problems
+
+
+def test_history_lists_filters_and_downloads(phone, base, problems):
+    open_phone(phone, base)
+    phone.click("[data-scenario=fake_collect]")
+    phone.wait_for_selector("#verdict")
+    phone.goto(base + "/history")
+    phone.wait_for_selector("#hist-rows tbody tr")
+    with phone.expect_download() as csv_file:
+        phone.click("#export-csv")
+    assert csv_file.value.suggested_filename == "satarkpay-history.csv"
+    with phone.expect_download() as json_file:
+        phone.click("#export-json")
+    assert json_file.value.suggested_filename == "satarkpay-history.json"
+    phone.fill("#hist-q", "no-such-thing-at-all")
+    phone.wait_for_selector("#hist-empty")
+    assert not problems, problems

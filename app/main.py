@@ -26,6 +26,7 @@ from app import auth, config
 from app.analysis.extract import normalise_url
 from app.analysis.pipeline import analyze, analyze_url
 from app.analysis.scoring import level_rank
+from app.payments import i18n
 from app.payments import models as pay_models
 from app.payments import scenarios, store
 from app.payments.geo import city_index
@@ -576,6 +577,7 @@ def api_score(body: PaymentIn, request: Request, role: str = ANYONE_LOGGED_IN, e
     entry = engine.score_request(_txn_from(body), source="api", explain_always=body.explain)
     result, txn = entry["result"], entry["txn"]
     apply_reputation(result, body.payee)
+    i18n.localise(result)
     result["stages"] = scan_stages(result, txn)
     _log_check(request, body.kind, body.payee, body.amount, body.note or "", result["score"], result["level"], result["action"], result["headline_en"])
     if body.record:     # an app that only wants it recorded: warned payments go ahead, stopped ones do not
@@ -743,7 +745,7 @@ def api_demo(persona: Literal["sunita", "rahul", "priya"] = "sunita", _: str = A
     """What the phone screen shows: who you are, ready-made payments and the attacks."""
     me = PERSONAS[persona]
     return {"persona": persona, "me": {**next(p for p in engine.persona_list() if p["key"] == persona), "device": engine.world.users[me["vpa"]].device},
-            "personas": engine.persona_list(), "scenarios": scenarios.phone_scenarios(engine, persona), "attacks": scenarios.ATTACKS,
+            "personas": engine.persona_list(), "scenarios": [{**sc, **{f"title_{code}": i18n.translate(sc["title"], code) for code in i18n.LANGS}} for sc in scenarios.phone_scenarios(engine, persona)], "attacks": scenarios.ATTACKS,
             "shop": engine.persona_shop(), "lan": _lan_address(), "local": None}
 
 

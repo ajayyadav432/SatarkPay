@@ -43,10 +43,10 @@
   }
 
   const ACTIONS = {
-    ALLOW: { label: "Allowed", label_hi: "ठीक है", icon: "✓", cls: "ok" },
-    WARN: { label: "Warned", label_hi: "चेतावनी", icon: "!", cls: "warn" },
-    HOLD: { label: "Held", label_hi: "रोका गया", icon: "❚❚", cls: "hold" },
-    BLOCK: { label: "Blocked", label_hi: "अस्वीकृत", icon: "✕", cls: "block" },
+    ALLOW: { label: "Allowed", label_hi: "ठीक है", label_bn: "ঠিক আছে", label_mr: "ठीक आहे", label_ta: "சரி", label_te: "సరే", icon: "✓", cls: "ok" },
+    WARN: { label: "Warned", label_hi: "चेतावनी", label_bn: "সতর্কতা", label_mr: "इशारा", label_ta: "எச்சரிக்கை", label_te: "హెచ్చరిక", icon: "!", cls: "warn" },
+    HOLD: { label: "Held", label_hi: "रोका गया", label_bn: "আটকে রাখা", label_mr: "रोखले", label_ta: "நிறுத்தி வைப்பு", label_te: "ఆపి ఉంచాం", icon: "❚❚", cls: "hold" },
+    BLOCK: { label: "Blocked", label_hi: "अस्वीकृत", label_bn: "ব্লক করা", label_mr: "ब्लॉक केले", label_ta: "தடுக்கப்பட்டது", label_te: "నిరోధించాం", icon: "✕", cls: "block" },
   };
 
   const LIKELY = {
@@ -57,9 +57,10 @@
   const KINDS = { PAY: "Typed", QR: "QR", LINK: "Link", COLLECT: "Collect" };
 
   // Status colour always comes with an icon and a word, never alone.
-  function actionPill(action, hindi) {
+  function actionPill(action, language) {
     const m = ACTIONS[action] || ACTIONS.ALLOW;
-    return h("span", { class: "pill pill-" + m.cls }, h("span", { class: "pill-icon", "aria-hidden": "true", text: m.icon }), hindi ? m.label_hi : m.label);
+    const code = language === true ? "hi" : language;
+    return h("span", { class: "pill pill-" + m.cls }, h("span", { class: "pill-icon", "aria-hidden": "true", text: m.icon }), m["label_" + code] || m.label);
   }
 
   function shortVpa(v) {
@@ -85,12 +86,27 @@
     return btn;
   }
 
+  const LANGS = [["en", "English"], ["hi", "हिंदी"], ["bn", "বাংলা"], ["mr", "मराठी"], ["ta", "தமிழ்"], ["te", "తెలుగు"]];
+  const NAV = { feed: { en: "Scam feed", hi: "स्कैम फ़ीड", bn: "প্রতারণা ফিড", mr: "फसवणूक फीड", ta: "மோசடி செய்திகள்", te: "మోసాల ఫీడ్" }, history: { en: "History", hi: "इतिहास", bn: "ইতিহাস", mr: "इतिहास", ta: "வரலாறு", te: "చరిత్ర" } };
+
+  function lang() {
+    try { const saved = localStorage.getItem("satarkpay-lang"); if (LANGS.some(([c]) => c === saved)) return saved; } catch (e) { /* storage blocked: start in English */ }
+    return "en";
+  }
+
+  function setLang(code) {
+    try { localStorage.setItem("satarkpay-lang", code); } catch (e) { /* storage blocked: the choice lasts for this page */ }
+    document.documentElement.setAttribute("lang", code);
+  }
+
+  const navWord = (key) => NAV[key][lang()];
+
   function topbar(active) {
     const OWN = { admin: [["/", "Dashboard"], ["/pay", "Phone"], ["/merchant", "Merchant"]], user: [["/pay", "Phone"]], merchant: [["/merchant", "Merchant"]] };
     const nav = h("nav", { class: "nav", "aria-label": "Screens" });
     const account = h("div", { class: "account" });
     const paint = (me) => {
-      const links = [...(me ? OWN[me.role] : []), ["/qr", "Test QR codes"], ["/how", "How it works"]];
+      const links = [...(me ? OWN[me.role] : []), ["/feed", navWord("feed")], ...(me ? [["/history", navWord("history")]] : []), ["/qr", "Test QR codes"], ["/how", "How it works"]];
       nav.replaceChildren(...links.map(([href, label]) =>
         h("a", { href, class: href === active ? "nav-link active" : "nav-link", "aria-current": href === active ? "page" : null, text: label })));
       account.replaceChildren(me
@@ -145,5 +161,5 @@
     return data;
   }
 
-  window.SP = { h, s, rupees, count, percent, ACTIONS, LIKELY, KINDS, actionPill, shortVpa, topbar, tooltip, tipRow, getJSON, sendJSON, currentTheme };
+  window.SP = { LANGS, lang, setLang, h, s, rupees, count, percent, ACTIONS, LIKELY, KINDS, actionPill, shortVpa, topbar, tooltip, tipRow, getJSON, sendJSON, currentTheme };
 })();

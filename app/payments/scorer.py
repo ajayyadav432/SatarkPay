@@ -7,6 +7,7 @@ import time
 import numpy as np
 
 from app import config
+from app.payments import i18n
 from app.payments import explain, policy
 from app.payments.context import link_signal, note_signal, vpa_signal
 from app.payments.features import FEATURES, FeatureStore
@@ -68,6 +69,7 @@ class Scorer:
                            "advice": explain.advice_for(likely), "shap": explain.waterfall(values, base), "values": _public_values(f)})
         else:
             result.update({"headline_en": "Looks fine", "headline_hi": "ठीक लग रहा है", "likely": None, "reasons": [], "advice": [], "shap": None})
+        i18n.localise(result)
         result["latency_ms"] = round((time.perf_counter() - started) * 1000, 2)
         return result
 
