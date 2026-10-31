@@ -89,7 +89,7 @@ def _host_allowed(host: str | None) -> bool:
 async def security_headers(request: Request, call_next):
     if not _host_allowed(request.headers.get("host")):
         return JSONResponse({"detail": "Open this app by localhost or its IP address."}, status_code=403)
-    # Another website must not drive this app through a browser on the laptop. The reused browser extension is allowed.
+    # Another website must not drive this app through a browser on the laptop. The browser extension is allowed.
     origin = request.headers.get("origin")
     if request.method in UNSAFE and origin and not origin.startswith("chrome-extension://") and origin.split("://", 1)[-1] != request.headers.get("host"):
         return JSONResponse({"detail": "Request from another website refused."}, status_code=403)
@@ -197,7 +197,7 @@ class SpeedIn(BaseModel):
 
 
 class IngestIn(BaseModel):
-    """The exact request of the reused SatarkPay Android app and browser extension."""
+    """The exact request of the SatarkPay Android app and browser extension."""
     model_config = ConfigDict(extra="forbid")
 
     text: str = Field(min_length=1, max_length=config.MAX_TEXT_CHARS)
@@ -856,7 +856,7 @@ def api_join_svg(_: str = ADMIN):
     return Response(buf.getvalue(), media_type="image/svg+xml")
 
 
-# --- compatibility with the reused SatarkPay Android app and browser extension -----------
+# --- compatibility with the SatarkPay Android app and browser extension -----------
 
 _seen_ingest: dict[str, dict] = {}
 _last_link_logged: dict[str, float] = {}

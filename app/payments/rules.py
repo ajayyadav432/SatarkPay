@@ -5,7 +5,7 @@ Rules take plain numbers, so the same function runs per payment when live and ov
 from __future__ import annotations
 
 # High and Critical need more than one model's opinion. These facts count as that second voice.
-P2P_COLLECT = ("p2p_collect", 0.90)      # NPCI stopped person-to-person collect requests by 1 Oct 2025 (plan.md section 5)
+P2P_COLLECT = ("p2p_collect", 0.90)      # NPCI stopped person-to-person collect requests by 1 Oct 2025 (sources: docs/JUDGING_QA.md)
 RECEIVE_LURE = ("receive_lure", 0.70)    # entering a PIN or approving a request always sends money, never receives it
 SCAM_SMS_LINK = ("scam_sms_link", 0.60)  # a scam SMS named this payee or this link's site
 SCAM_LINK = ("scam_link", 0.50)          # the link that opened the payment looks like phishing

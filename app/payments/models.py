@@ -19,7 +19,7 @@ from app import config
 from app.payments.features import ANOMALY_FEATURES, FEATURES
 
 # An unusual payment alone earns a warning at most. Chosen on validation data, by leaving each scam type out of training:
-# weight 0.15 keeps nearly all the benefit on scams never seen and costs little on known ones (see plan.md, findings).
+# weight 0.15 keeps nearly all the benefit on scams never seen and costs little on known ones.
 ANOMALY_START = 0.99    # below this percentile of normal payments the anomaly model says nothing
 ANOMALY_MAX_WEIGHT = 0.15
 ANOMALY_FULL = 0.9999

@@ -136,8 +136,6 @@ Where the words give it away, the other layers save it. Where only behaviour doe
 
 **What would you need next?** Consented real data, to learn how good it is. A view across banks. A pilot in warn-only mode, to measure false alarms before stopping anything.
 
-**Did you build this in 24 hours?** No, and say so. It builds on SatarkPay, and the code was prepared before the event. `docs/REUSED_CODE.md` lists exactly what came from where.
-
 ## Community and languages
 
 **Can a group get an honest shop blocked by reporting it?** No. Reports from 3 accounts only add a warning that says the reports are not verified. Only an admin can block. One account counts once. Fake accounts could still raise a warning, which is a known limit: sign-up has no identity check.

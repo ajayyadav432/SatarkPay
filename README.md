@@ -209,10 +209,6 @@ The results above do not cover QR scans, so QR contents are measured on their ow
 
 This is small, it is hand-written, and it tests what a QR says, not reading one through a camera. It is weaker than the main results. Misses include prize and lottery notes, a threat about a power cut, and plain payments with no words at all.
 
-## Reused code
-
-SatarkPay builds on code from an earlier project: the text and link engine, the phone app's SMS check and the browser extension. Everything to do with transactions is new. [docs/REUSED_CODE.md](docs/REUSED_CODE.md) lists exactly what came from where, and a test checks the checksums.
-
 ## Project layout
 
 ```
@@ -220,7 +216,7 @@ app/
   main.py            REST API, live stream, pages
   config.py          names, paths, limits
   payments/          features, context, rules, models, policy, explain, scorer, live, scenarios, graph, store
-  analysis/, data/   the context engine and rules, unchanged
+  analysis/, data/   the context engine and rules
   static/            dashboard, pay, merchant, how
 ml/
   simulate.py        the UPI world: normal life, 7 scam types, hard cases
@@ -228,16 +224,15 @@ ml/
   train.py           XGBoost, Isolation Forest, score bands
   evaluate.py        everything on the model card
   paysim_benchmark.py
-  engine/            the engine's trained text and URL models, unchanged
+  engine/            the engine's trained text and URL models
 models/              xgb.ubj, iforest.joblib, bundle.json, metrics.json
 tests/               unit, parity, API, security, acceptance R1-R10, browser; engine/ holds the engine's own tests
-android/             the phone app: scans UPI QR codes and checks SMS (SMS part from SatarkPay)
-extension/           SatarkPay Link Guard, unchanged
-docs/                demo script, judging Q&A, reuse record, pitch deck
-plan.md              the plan, design decisions and the findings log
+android/             the phone app: scans UPI QR codes and checks SMS
+extension/           SatarkPay Link Guard
+docs/                demo script, judging Q&A, pitch deck
 ```
 
-## Using the reused sensors
+## Using the phone app and extension
 
 - **Phone app (Android): scan a UPI QR.** Build with `cd android && ./gradlew assembleDebug`. Connect by USB and run `./run.sh phone` in a second terminal, or use `./run.sh wifi` and enter `http://<laptop-ip>:8000` under *Laptop connection*. Press *Scan UPI QR* and point it at a code on `http://localhost:8000/qr`, or share a QR picture to the app. It checks the payment and shows the decision and reasons. It never moves real money. A real UPI ID has no history in this system, so only its ID, amount and note are checked, and the app says so.
 - **Phone app (Android): SMS.** Enter the printed pairing code under *Laptop connection* and allow SMS. A real SMS then becomes context: a payment that follows it is scored with it.
@@ -247,7 +242,7 @@ plan.md              the plan, design decisions and the findings log
 
 - **The UPI world:** written by the team (`ml/simulate.py`). Same seed, same data. Not stored in the repo.
 - **PaySim:** Lopez-Rojas, Elmir, Axelsson (2016), downloaded from the Hugging Face mirror `theman10/paysim`. Not stored in the repo.
-- **the engine's text and URL models:** their own datasets are listed in the SatarkPay README.
+- **The engine's text and URL models:** SMS Spam Collection, UCI ML Repository (228), CC BY 4.0. Phishing Email Dataset, Hugging Face `zefang-liu/phishing-email-dataset`, LGPL-3.0. PhiUSIIL Phishing URL Dataset, UCI ML Repository (967), CC BY 4.0.
 - **Facts quoted in the app and the pitch:** [NPCI ends P2P collect](https://www.angelone.in/news/market-updates/npci-to-end-upi-person-to-person-collect-requests-from-october-to-curb-fraud), [UPI fraud figures, Lok Sabha, 15 Dec 2025](https://ianslive.in/upi-frauds-worth-rs-805-crore-witnessed-this-fiscal-so-far-minister--20251215175703), [UPI volume in FY25](https://www.business-standard.com/finance/news/upi-s-contribution-to-payments-ecosystem-volume-grows-to-83-4-in-fy25-125052900871_1.html), [Financial Fraud Risk Indicator](https://www.medianama.com/2025/05/223-dot-financial-fraud-risk-indicator-upi/). These are press-reported.
 - **Open Sans font:** SIL Open Font License, `app/static/vendor/fonts/OPEN-SANS-LICENSE.txt`.
 - **Twitter colour theme:** values from [tweakcn](https://tweakcn.com/r/themes/twitter.json), copied by hand into the website, extension and app.

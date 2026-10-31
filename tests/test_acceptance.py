@@ -1,4 +1,4 @@
-"""One test per requirement of problem statement 3.2. The numbers R1-R10 are the ones in plan.md, section 1."""
+"""One test per requirement of problem statement 3.2. The numbers R1-R10 are the ones in the README."""
 import json
 from pathlib import Path
 

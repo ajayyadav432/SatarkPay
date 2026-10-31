@@ -10,8 +10,8 @@ ROOT = Path(__file__).resolve().parent.parent
 APP_DIR = ROOT / "app"
 STATIC_DIR = APP_DIR / "static"
 DATA_DIR = ROOT / "data"
-MODELS_DIR = ROOT / "ml" / "engine"          # the reused SatarkPay text and URL models, unchanged
-KNOWLEDGE_DIR = APP_DIR / "data"               # the reused SatarkPay rules and brand lists, unchanged
+MODELS_DIR = ROOT / "ml" / "engine"          # the text and URL models
+KNOWLEDGE_DIR = APP_DIR / "data"               # the rules and brand lists
 
 PAY_MODELS_DIR = ROOT / "models"               # SatarkPay's own models and metrics.json
 XGB_FILE = PAY_MODELS_DIR / "xgb.ubj"
@@ -51,7 +51,7 @@ def env(key: str, default: str | None = None) -> str | None:
 
 LOOPBACK = {"127.0.0.1", "::1", "localhost"}
 
-# Input limits (the reused engine reads the first four)
+# Input limits (the engine reads the first four)
 MAX_TEXT_CHARS = 20_000
 MAX_SENDER_CHARS = 320
 MAX_URLS_PER_MESSAGE = 25
@@ -70,10 +70,10 @@ RISK_LEVELS = [
 
 CHANNELS = ["sms", "email", "social", "url"]
 
-# the engine's warning page asks for confirmation from this level upwards (kept for the reused extension).
+# the engine's warning page asks for confirmation from this level upwards (kept for the extension).
 WARN_FROM_LEVEL = "Medium"
 
 # Reported UPI fraud, used only for the real-world correction on the model card.
-# Sources are listed in plan.md section 5.
+# Sources are listed in docs/JUDGING_QA.md.
 REAL_FRAUD_INCIDENTS_FY25 = 1_264_000
 REAL_UPI_TRANSACTIONS_FY25 = 185_800_000_000

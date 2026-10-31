@@ -1,6 +1,6 @@
 """Reads the words around a payment: note, link, UPI ID and recent SMS.
 
-The context engine (app/analysis, unchanged) does the heavy lifting. This file adds payment knowledge the engine
+The context engine (app/analysis) does the heavy lifting. This file adds payment knowledge the engine
 does not have, because it was built for messages. Measured on the engine alone: "Approve to get cashback Rs 750"
 and "scan to receive money" score Safe 0, and "paytm.cashback.offer@okaxis" scores Safe 0.
 """

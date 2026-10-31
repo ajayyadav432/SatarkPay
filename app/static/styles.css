@@ -350,7 +350,7 @@ td.right, th.right { text-align: right; font-variant-numeric: tabular-nums; }
 details.table-view { margin-top: 8px; font-size: 13px; }
 details.table-view summary { cursor: pointer; color: var(--muted); font-weight: 600; }
 
-/* The warning page reused from SatarkPay ----------------------------------------------------------------- */
+/* The warning page ----------------------------------------------------------------- */
 .go-wrap { max-width: 640px; margin: 0 auto; padding: 32px 16px; display: grid; gap: 12px; }
 .go-card { display: grid; gap: 10px; }
 .go-card h1 { font-size: 22px; }

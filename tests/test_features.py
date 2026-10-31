@@ -22,7 +22,7 @@ def seen(store, *txns):
         store.observe(t)
 
 
-def test_the_reused_engine_models_are_really_loaded():
+def test_the_engine_models_are_really_loaded():
     """The engine still answers without its models, only worse, and its own tests then skip. This must fail loudly."""
     from app.analysis import models
     assert all(models.status().values()), f"SatarkPay models not found in {models.config.MODELS_DIR}"

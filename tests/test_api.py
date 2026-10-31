@@ -1,4 +1,4 @@
-"""The REST API, the live engine, the reused sensors' contracts and security."""
+"""The REST API, the live engine, the phone app and extension contracts and security."""
 import json
 import time
 
@@ -439,7 +439,7 @@ def test_the_demos_scam_payments_are_flagged_and_the_shop_is_not(api):
         assert results[name]["reasons"], name
 
 
-# --- the reused Android app and extension: exact contracts ------------------------------------------------
+# --- the Android app and extension: exact contracts ------------------------------------------------
 
 def test_health_as_the_phone_app_expects(api):
     assert api.get("/api/health").json()["status"] == "ok"
