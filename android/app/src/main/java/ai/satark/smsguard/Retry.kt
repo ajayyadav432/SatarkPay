@@ -14,6 +14,8 @@ object Retry {
     fun unchecked(context: Context): Int = synchronized(lock) {
         val store = Store(context)
         if (store.serverUrl.startsWith("https://")) return 0   // real messages never go to a public server
+        val waiting = store.recent().any { it.level == null }
+        if (waiting && !runCatching { SatarkClient.health(store.serverUrl) }.getOrDefault(false)) LaptopFinder.reconnect(context)
         var done = 0
         for (item in store.recent().filter { it.level == null }) {
             val fixed = try {

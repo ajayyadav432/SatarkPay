@@ -3,6 +3,7 @@ package ai.satark.smsguard
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import java.io.IOException
 import kotlin.math.abs
 
 /** One path for every incoming message, whether it came as an SMS or through a notification. */
@@ -39,7 +40,11 @@ object Incoming {
             // Real messages hold OTPs and bank details. They are only ever sent to the team's own laptop, never to a public server.
             Checked(now, sender, text, null, null, null, null, NOT_SENT, channel = channel)
         } else try {
-            val r = SatarkClient.checkSms(store.serverUrl, store.pairingCode, sender, text, "$sender-$time-${text.hashCode()}", channel)
+            fun ask() = SatarkClient.checkSms(store.serverUrl, store.pairingCode, sender, text, "$sender-$time-${text.hashCode()}", channel)
+            val r = try { ask() } catch (e: IOException) {
+                if (!LaptopFinder.reconnect(context)) throw e   // the Wi-Fi or hotspot may have changed
+                ask()
+            }
             Notifier.maybeBlock(context, r)
             Checked.fromResponse(sender, text, r, channel)
         } catch (e: Exception) {

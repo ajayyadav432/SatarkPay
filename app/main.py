@@ -873,6 +873,20 @@ def health():
     return {"status": "ok", "app": config.APP_NAME, "version": VERSION, "models": pay_models.ready()}
 
 
+@app.get("/api/laptop-proof")
+def laptop_proof(request: Request, nonce: str = Query(min_length=16, max_length=64)):
+    """The phone looks for this laptop on its Wi-Fi or hotspot, and sends real messages to it, so the laptop proves it knows the pairing
+    code without revealing it. Only its own address is signed, so another device cannot pass this answer on as its own."""
+    code = config.env("SATARK_TOKEN")
+    if not code or config.ON_VERCEL:
+        raise HTTPException(status_code=404, detail="Not found.")
+    host = request.headers.get("host", "").rsplit(":", 1)[0]
+    lan = _lan_address()
+    if host not in {"127.0.0.1", lan.split("//")[1].rsplit(":", 1)[0] if lan else "127.0.0.1"}:
+        raise HTTPException(status_code=403, detail="Not this laptop's address.")
+    return {"proof": hmac.new(code.encode(), f"{nonce}:{host}".encode(), "sha256").hexdigest()}
+
+
 @app.post("/api/ingest")
 def api_ingest(body: IngestIn, request: Request, engine: Live = Depends(get_live)):
     """An SMS that arrived on the phone with SMS Guard. It is judged, and remembered as context for the phone's user.

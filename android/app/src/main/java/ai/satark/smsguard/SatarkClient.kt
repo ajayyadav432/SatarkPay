@@ -66,6 +66,9 @@ object SatarkClient {
         return request("$server/api/ingest", "POST", code, body.toString())
     }
 
+    fun laptopProof(server: String, nonce: String): String =
+        request("$server/api/laptop-proof?nonce=$nonce", "GET", null, null).getString("proof")
+
     /** True when the laptop answers. Used by the "Test connection" button. */
     fun health(server: String): Boolean =
         request("$server/api/health", "GET", null, null).optString("status") == "ok"

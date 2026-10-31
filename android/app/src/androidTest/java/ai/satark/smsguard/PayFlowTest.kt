@@ -322,4 +322,22 @@ class PayFlowTest {
         assertTrue(item?.level in setOf("Medium", "High", "Critical"))
         assertEquals("social", store.recent().first().channel)
     }
+
+    // --- finding the laptop on a Wi-Fi or hotspot ---------------------------------------------------------------
+
+    @Test fun theLaptopIsFoundOnThisNetworkOnlyWithTheRightCode() {
+        org.junit.Assume.assumeTrue(LaptopFinder.neighbours().isNotEmpty())
+        assertTrue(LaptopFinder.neighbours().none { it == "127.0.0.1" })
+        val found = LaptopFinder.find(store.pairingCode)
+        assertTrue("found $found", found != null && found.startsWith("http://") && !found.contains("127.0.0.1"))
+        assertEquals(null, LaptopFinder.find("not-the-pairing-code"))
+    }
+
+    @Test fun aMessageStillReachesTheLaptopAfterItsAddressChanges() {
+        org.junit.Assume.assumeTrue(LaptopFinder.neighbours().isNotEmpty())
+        store.serverUrl = "http://127.0.0.1:9"
+        val item = Incoming.check(app, "VK-SBIBNK", "${System.nanoTime()} $scamChat", "sms", 1L)
+        assertTrue("error: ${item?.error}", item?.level in setOf("Medium", "High", "Critical"))
+        assertTrue(store.serverUrl, store.serverUrl.startsWith("http://") && !store.serverUrl.contains("127.0.0.1"))
+    }
 }

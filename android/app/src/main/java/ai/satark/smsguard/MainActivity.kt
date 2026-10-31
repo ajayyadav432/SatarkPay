@@ -210,8 +210,9 @@ private fun HomeScreen(store: Store, note: String, onScan: () -> Unit, onEnter: 
 
     LaunchedEffect(Unit) {
         Thread {
-            val ok = runCatching { SatarkClient.health(store.serverUrl) }.getOrDefault(false)
-            (context as? ComponentActivity)?.runOnUiThread { online = ok }
+            val ok = runCatching { SatarkClient.health(store.serverUrl) }.getOrDefault(false) || LaptopFinder.reconnect(context)
+            if (ok) Retry.unchecked(context)
+            (context as? ComponentActivity)?.runOnUiThread { online = ok; recent = store.recent() }
         }.start()
     }
     // Refresh the list when a new SMS has been checked.
@@ -372,6 +373,17 @@ private fun ConnectionScreen(store: Store, onBack: () -> Unit) {
         Text(if (chatsOn) "✓ RCS, WhatsApp and Gmail messages are being checked too." else "SMS only. RCS chats, WhatsApp and Gmail are not being checked.", color = TextSoft, fontSize = 14.sp)
         SecondaryButton(if (chatsOn) "Stop checking chats" else "Check RCS, WhatsApp and Gmail too") {
             context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+        }
+        if (mode != "online") SecondaryButton("Find laptop on Wi-Fi or hotspot", icon = R.drawable.ic_ui_laptop) {
+            status = "Looking for the laptop…"
+            Thread {
+                val found = LaptopFinder.find(store.pairingCode)
+                if (found != null) { store.serverUrl = found; Retry.unchecked(context) }
+                (context as? ComponentActivity)?.runOnUiThread {
+                    if (found != null) { server = found; refresh(); status = "✓ Connected to $found" }
+                    else status = "✗ Not found. Same Wi-Fi or hotspot? ./run.sh wifi running? Right pairing code?"
+                }
+            }.start()
         }
         PrimaryButton("Test connection", icon = R.drawable.ic_ui_laptop, onClick = {
             status = "Checking…"

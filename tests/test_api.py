@@ -548,3 +548,35 @@ def test_a_demo_upi_qr_holds_a_simulated_id_and_the_scam_note(api):
 def test_a_scanned_real_id_is_accepted_and_a_scam_note_still_stops_it(api):
     r = api.post("/api/v1/score", json=body(payee="someone.new@oksbi", amount=5000, kind="QR", note="scan to receive"))
     assert r.status_code == 200 and r.json()["stopped"]
+
+
+# --- the phone finding the laptop on a Wi-Fi or hotspot -------------------------------------------------
+
+def _lan_client(monkeypatch, code):
+    from fastapi.testclient import TestClient
+    from app import main
+    from app.main import app
+    monkeypatch.setattr(main.config, "env", lambda name, default=None: code if name == "SATARK_TOKEN" else default)
+    monkeypatch.setattr(main, "_lan_address", lambda: "http://192.168.1.20:8000")
+    return TestClient(app, base_url="http://192.168.1.20:8000", client=("192.168.1.50", 5000))
+
+
+def test_the_laptop_proves_it_knows_the_pairing_code_without_revealing_it(monkeypatch):
+    with _lan_client(monkeypatch, "pairing-code-for-test") as c:
+        r = c.get("/api/laptop-proof", params={"nonce": "a" * 32})
+        assert r.status_code == 200
+        import hmac
+        want = hmac.new(b"pairing-code-for-test", f"{'a' * 32}:192.168.1.20".encode(), "sha256").hexdigest()
+        assert r.json() == {"proof": want}
+        assert "pairing-code-for-test" not in r.text
+        assert c.get("/api/laptop-proof", params={"nonce": "short"}).status_code == 422
+
+
+def test_another_address_cannot_get_the_laptop_to_sign_for_it(monkeypatch):
+    with _lan_client(monkeypatch, "pairing-code-for-test") as c:
+        assert c.get("/api/laptop-proof", params={"nonce": "a" * 32}, headers={"Host": "192.168.1.99:8000"}).status_code in (400, 403)
+
+
+def test_no_proof_without_a_pairing_code(monkeypatch):
+    with _lan_client(monkeypatch, "") as c:
+        assert c.get("/api/laptop-proof", params={"nonce": "a" * 32}).status_code == 404
