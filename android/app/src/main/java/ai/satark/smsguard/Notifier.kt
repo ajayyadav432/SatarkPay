@@ -81,14 +81,14 @@ object Notifier {
                 big = "From ${item.sender}\n${item.error}\n\nOpen SatarkPay and choose a laptop connection, then tap \"Test connection\"."
             }
             risky -> {
-                title = "⚠ Scam message · ${item.level} ${item.score}"
-                line = listOfNotNull(item.ownLevel?.let { "alone: $it ${item.ownScore}" }, category, "from ${item.sender}")
+                title = "⚠ Scam message · ${item.level} ${item.score}/100"
+                line = listOfNotNull(item.ownLevel?.let { "alone: $it ${item.ownScore}/100" }, category, "from ${item.sender}")
                     .joinToString(" · ")
                 big = buildString {
                     append(category ?: "Suspicious message").append(" · from ").append(item.sender)
                     if (item.ownLevel != null) {
-                        append("\n\nThis message alone: ").append(item.ownLevel).append(" ").append(item.ownScore)
-                        append("\nWith this sender's earlier messages: ").append(item.level).append(" ").append(item.score)
+                        append("\n\nThis message alone: ").append(item.ownLevel).append(" ").append(item.ownScore).append("/100")
+                        append("\nWith this sender's earlier messages: ").append(item.level).append(" ").append(item.score).append("/100")
                     }
                     item.reason?.let { append("\n\nWhy: ").append(it) }
                     append("\n\nDo not click links, call back, pay or share an OTP.")
@@ -96,7 +96,7 @@ object Notifier {
                 }
             }
             else -> {
-                title = "✓ Message looks ${item.level?.lowercase()} · ${item.score}"
+                title = "✓ Message looks ${item.level?.lowercase()} · ${item.score}/100"
                 line = "From ${item.sender} · checked by SatarkPay"
                 big = "From ${item.sender}\n${item.text.take(160)}"
             }

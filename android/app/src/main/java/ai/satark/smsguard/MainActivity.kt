@@ -422,7 +422,7 @@ private fun RecentCard(item: Checked) {
     // A real UPI ID has no history here, so a low score is "no warnings", never "safe".
     val realScan = item.sender.startsWith("QR: ") && !isSimulatedId(item.sender) && item.level in setOf("Safe", "Low")
     val color = if (realScan) RiskUnknown else levelColor(item.level)
-    val label = if (realScan) "No warnings found" else item.level ?: "Not checked"
+    val label = if (realScan) "No warnings found" else item.level?.let { "$it · ${item.score}/100" } ?: "Not checked"
     Panel(padding = 14.dp) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(Modifier.size(46.dp).clip(CircleShape).background(color), contentAlignment = Alignment.Center) {
@@ -435,7 +435,7 @@ private fun RecentCard(item: Checked) {
                 }
                 Text(label, color = if (realScan) TextSoft else color, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                 if (item.ownLevel != null)
-                    Text("This message alone: ${item.ownLevel} ${item.ownScore} · raised by this sender's earlier messages", fontSize = 12.sp, color = TextSoft)
+                    Text("This message alone: ${item.ownLevel} ${item.ownScore}/100 · raised by this sender's earlier messages", fontSize = 12.sp, color = TextSoft)
                 Text(item.text, maxLines = 2, overflow = TextOverflow.Ellipsis, fontSize = 14.sp, color = TextMain)
                 val note = if (realScan) "" else item.error ?: listOfNotNull(item.category?.takeIf { it != "None" }, item.reason).joinToString(" · ")
                 if (note.isNotEmpty()) Text(note, fontSize = 12.sp, color = TextSoft, maxLines = 2, overflow = TextOverflow.Ellipsis)
