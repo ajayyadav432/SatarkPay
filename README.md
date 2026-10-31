@@ -12,7 +12,7 @@ It runs offline on one laptop, and there is a public test copy at **https://sata
 > **Everything here is simulated.** No real money, real accounts or real UPI connection. All UPI IDs end in `@sim...`, so that a simulated "mule" can never match a real person.
 > The results are on synthetic data. **How it would do on real payments is unknown.**
 
-<p align="center"><img src="docs/screen_phone.png" alt="The phone screen stopping a fake refund request, with the reasons" width="270"> <img src="docs/screen_dashboard.png" alt="The live dashboard during attacks: payments, alerts, the money network and the answer key" width="560"></p>
+<p align="center"><img src="docs/screen_phone.png" alt="The phone screen stopping a fake refund request, with the reasons" width="270"> <img src="docs/screen_dashboard.png" alt="The live dashboard during attacks: money stopped, attacks, live payments and alerts" width="560"></p>
 
 ## Team
 
@@ -47,7 +47,7 @@ Built with `cd android && ./gradlew assembleDebug`. Log in, or use a test login,
 - **Open payment app** hands a checked payment on a real UPI ID to a UPI app, and the app lists the UPI apps really installed on the phone. The person approves it there with their PIN, and SatarkPay never sees it. A blocked payment is not handed over. A warned or held one waits first.
 - **Check message** and **Check link** check something pasted in.
 - **Scam feed** and **History**, the same as on the website, with history saved as CSV or JSON.
-- **Connection** chooses Online (the default, no cable), Laptop over Wi-Fi, or Laptop over USB cable.
+- **Connection** chooses Online (the default, no cable), Laptop over Wi-Fi or hotspot (the app finds the laptop by itself), or Laptop over USB cable.
 - **Message protection** checks incoming SMS, with the person's permission. With notification access turned on, it also checks RCS chats, WhatsApp messages and Gmail from their notifications, and shows a score for each. Only Google Messages, Samsung Messages, WhatsApp and Gmail are read. Messages go only to the team's laptop, and never to an `https` server such as the Vercel copy. In online mode they are listed as not checked.
 
 New to the project? Read the [Project Guide](docs/SatarkPay_Project_Guide.pdf). To test it, use the [Testing Guide](docs/SatarkPay_Testing_Guide.pdf).
@@ -190,9 +190,9 @@ On scams it has seen, XGBoost alone does slightly better than the full system. T
 - **Payee signals need a view across banks.** A single bank cannot see fan-in on another bank's account. That points to a deployment at the network level.
 - **No real UPI integration.** A hackathon cannot get one. The integration point is one API call before the payment is sent.
 - **Kafka is not built.** The problem statement allows a stream simulator, and a stream simulator keeps the demo on one laptop with nothing else to install. The `Bus` class is where Kafka would go. That has not been tested.
-- **Logins are demo accounts.** There is one account per role, no sign-up, and logins end when the server restarts. It runs over plain http on one local network. A real deployment needs real accounts, https and rate limits on the API.
-- **SMS privacy.** In this demo the laptop reads the SMS. The production design scores it on the phone and sends only the score.
-- **The Android app has been run on one real phone (Samsung SM-E366B, Android 17).** QR pictures, the check, logins and the result screens were tested on it (`android/app/src/androidTest`). The camera was shown to open. Reading a QR through the lens, a real incoming SMS, a real WhatsApp notification and a real payment through a UPI app have not been confirmed. Real RCS messages from another phone were read and scored on it. UPI apps may also refuse a request from another app, whatever we send.
+- **Logins are demo accounts.** Test logins and sign-ups are for trying the project, and logins end when the server restarts. It runs over plain http on one local network. A real deployment needs real accounts, https and rate limits on the API.
+- **Message privacy.** In this demo the laptop reads the SMS, RCS, WhatsApp and Gmail text that the phone sees, and needs to be connected to give a score. The production design scores it on the phone and sends only the score.
+- **The Android app has been run on one real phone (Samsung SM-E366B, Android 17).** QR pictures, the check, logins and the result screens were tested on it (`android/app/src/androidTest`). The camera was shown to open. Reading a QR through the lens, a real incoming SMS, a real Gmail notification, a Wi-Fi router connection and a real payment through a UPI app have not been confirmed. Real RCS and WhatsApp messages were read and scored on it, and it found the laptop over the phone's own hotspot. UPI apps may also refuse a request from another app, whatever we send.
 - **Sign-ups use a shared simulated wallet.** A new user pays as a demo person and a new merchant sees the demo shop, because real accounts are not connected.
 - **The "this looks like" label is a best guess.** It named the right scam for 80% of flagged scams in the test. The reasons are exact. The label is not.
 
