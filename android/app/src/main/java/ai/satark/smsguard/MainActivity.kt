@@ -1,5 +1,8 @@
 package ai.satark.smsguard
 
+import android.provider.Settings
+import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -345,6 +348,15 @@ private fun ConnectionScreen(store: Store, onBack: () -> Unit) {
             label = { Text("SatarkPay address (laptop)") }, modifier = Modifier.fillMaxWidth())
         if (mode != "online") OutlinedTextField(value = code, onValueChange = { code = it; store.pairingCode = it }, singleLine = true,
             label = { Text("Pairing code (for SMS)") }, modifier = Modifier.fillMaxWidth())
+        var chatsOn by remember { mutableStateOf(false) }
+        LifecycleResumeEffect(Unit) {
+            chatsOn = NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
+            onPauseOrDispose { }
+        }
+        Text(if (chatsOn) "✓ RCS and WhatsApp messages are being checked too." else "SMS only. RCS chats and WhatsApp are not being checked.", color = TextSoft, fontSize = 14.sp)
+        SecondaryButton(if (chatsOn) "Stop checking chats" else "Check RCS and WhatsApp too") {
+            context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+        }
         PrimaryButton("Test connection", icon = R.drawable.ic_ui_laptop, onClick = {
             status = "Checking…"
             Thread {

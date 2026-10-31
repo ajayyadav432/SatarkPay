@@ -69,6 +69,7 @@ object Notifier {
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
         val risky = item.level in setOf("Medium", "High", "Critical")
+        if (item.channel == "social" && !risky) return   // a busy WhatsApp must not fill the screen; these stay in the list
         val category = item.category?.takeIf { it.isNotBlank() && it != "None" }
 
         val title: String
@@ -76,12 +77,12 @@ object Notifier {
         val big: String
         when {
             item.level == null -> {
-                title = "SatarkPay could not check an SMS"
+                title = "SatarkPay could not check a message"
                 line = "From ${item.sender} · ${item.error}"
-                big = "From ${item.sender}\n${item.error}\n\nOpen SatarkPay and tap \"Test connection\"."
+                big = "From ${item.sender}\n${item.error}\n\nOpen SatarkPay and choose a laptop connection, then tap \"Test connection\"."
             }
             risky -> {
-                title = "⚠ Scam SMS · ${item.level} ${item.score}"
+                title = "⚠ Scam message · ${item.level} ${item.score}"
                 line = listOfNotNull(item.ownLevel?.let { "alone: $it ${item.ownScore}" }, category, "from ${item.sender}")
                     .joinToString(" · ")
                 big = buildString {
@@ -96,7 +97,7 @@ object Notifier {
                 }
             }
             else -> {
-                title = "✓ SMS looks ${item.level?.lowercase()} · ${item.score}"
+                title = "✓ Message looks ${item.level?.lowercase()} · ${item.score}"
                 line = "From ${item.sender} · checked by SatarkPay"
                 big = "From ${item.sender}\n${item.text.take(160)}"
             }

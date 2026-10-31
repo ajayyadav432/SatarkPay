@@ -4,11 +4,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
-import android.util.Log
 
 /**
  * Called by Android for every incoming SMS. The text is sent to SatarkPay on the laptop and the
- * verdict is shown as a notification. Nothing is sent anywhere else.
+ * verdict is shown as a notification. Nothing is sent anywhere else. See [Incoming].
  */
 class SmsReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -17,29 +16,16 @@ class SmsReceiver : BroadcastReceiver() {
         // A long SMS arrives in several parts; join them per sender.
         val bySender = parts.filterNotNull().groupBy { it.displayOriginatingAddress ?: "unknown" }
         val pending = goAsync()   // keep the receiver alive while the network call runs
-        val store = Store(context)
-        // Real messages hold OTPs and bank details. They are only ever sent to the team's own laptop, never to a public server.
-        if (store.serverUrl.startsWith("https://")) { pending.finish(); return }
         Thread {
             try {
+                var answered = false
                 for ((sender, msgs) in bySender) {
                     val text = msgs.joinToString("") { it.displayMessageBody ?: "" }
-                    if (text.isBlank()) continue
-                    val time = msgs.first().timestampMillis
-                    val item = try {
-                        val r = SatarkClient.checkSms(store.serverUrl, store.pairingCode, sender, text, "$sender-$time-${text.hashCode()}")
-                        Notifier.maybeBlock(context, r)
-                        Checked.fromResponse(sender, text, r)
-                    } catch (e: Exception) {
-                        Log.w(TAG, "check failed", e)
-                        Checked(System.currentTimeMillis(), sender, text, null, null, null, null, e.message ?: e.javaClass.simpleName)
-                    }
-                    store.add(item)
-                    Notifier.show(context, item)
-                    context.sendBroadcast(Intent(ACTION_UPDATED).setPackage(context.packageName))
+                    val item = Incoming.check(context, sender, text, "sms", msgs.first().timestampMillis)
+                    if (item?.level != null) answered = true
                 }
                 // The laptop answered, so also send any SMS that could not be checked earlier.
-                if (store.recent().firstOrNull()?.level != null) Retry.unchecked(context)
+                if (answered) Retry.unchecked(context)
             } finally {
                 pending.finish()
             }

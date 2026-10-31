@@ -13,11 +13,12 @@ object Retry {
     /** Re-checks every unchecked SMS. Runs on a background thread. Returns how many are now checked. */
     fun unchecked(context: Context): Int = synchronized(lock) {
         val store = Store(context)
+        if (store.serverUrl.startsWith("https://")) return 0   // real messages never go to a public server
         var done = 0
         for (item in store.recent().filter { it.level == null }) {
             val fixed = try {
                 val r = SatarkClient.checkSms(store.serverUrl, store.pairingCode, item.sender, item.text,
-                    "${item.sender}-${item.time}-${item.text.hashCode()}")
+                    "${item.sender}-${item.time}-${item.text.hashCode()}", item.channel)
                 Notifier.maybeBlock(context, r)
                 val reasons = r.optJSONArray("reasons")
                 item.copy(level = r.optString("level"), score = r.optInt("score"), category = r.optString("category"),

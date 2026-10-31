@@ -146,7 +146,9 @@ Where the words give it away, the other layers save it. Where only behaviour doe
 
 **Why no cashback or offers comparison?** Our focus is security. We have no real offer data and would not invent any. It could come later, using offers published by the apps.
 
-**Do you send SMS to the cloud?** No. Incoming SMS go only to the team's laptop. In online mode they are not sent anywhere, and a person can paste a message to check it.
+**Do you read RCS and WhatsApp?** Only if the person allows notification access, and only from Google Messages, Samsung Messages and WhatsApp. Other apps' notifications are ignored. A muted chat shows no notification, so it is not checked.
+
+**Do you send SMS to the cloud?** No. Incoming SMS and chat messages go only to the team's laptop. In online mode they are not sent anywhere, and a person can paste a message to check it.
 
 **Are the translations checked?** Not yet by native speakers. All numbers and names in a reason come from the same real values as the English.
 

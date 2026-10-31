@@ -59,9 +59,9 @@ object SatarkClient {
     fun simRun(server: String, start: Boolean) { request("$server/api/v1/sim/" + if (start) "start" else "stop", "POST", null, "{}") }
 
     /** Sends one SMS to /api/ingest and returns the engine's verdict. Throws on network or server errors. */
-    fun checkSms(server: String, code: String, sender: String, text: String, ref: String): JSONObject {
+    fun checkSms(server: String, code: String, sender: String, text: String, ref: String, channel: String = "sms"): JSONObject {
         val body = JSONObject()
-            .put("text", text.take(20000)).put("channel", "sms").put("sender", sender.take(320))
+            .put("text", text.take(20000)).put("channel", channel).put("sender", sender.take(320))
             .put("source", "sms-app").put("ref", ref.take(300))
         return request("$server/api/ingest", "POST", code, body.toString())
     }

@@ -258,4 +258,58 @@ class PayFlowTest {
         store.theme = "system"
         ai.satark.smsguard.theme.AppTheme.mode = "system"
     }
+
+    // --- messages that arrive as a notification ---------------------------------------------------------------
+
+    private val scamChat = "URGENT your SBI account is blocked. Update KYC now at http://sbi-kyc-update.xyz/login or lose your money"
+
+    private fun chat(build: androidx.core.app.NotificationCompat.Builder.() -> Unit) =
+        androidx.core.app.NotificationCompat.Builder(app, "risk").setSmallIcon(R.drawable.ic_stat_satark).apply(build).build()
+
+    @Test fun anRcsChatIsReadFromItsNotification() {
+        val person = androidx.core.app.Person.Builder().setName("VK-SBIBNK").build()
+        val n = chat { setStyle(androidx.core.app.NotificationCompat.MessagingStyle(person).addMessage("old message", 1L, person).addMessage(scamChat, 2L, person)) }
+        assertEquals("VK-SBIBNK" to scamChat, ChatListener.read(n))
+    }
+
+    @Test fun theOwnersMessageASummaryAndAStatusAreNotRead() {
+        val me = androidx.core.app.Person.Builder().setName("Me").build()
+        val own = chat { setStyle(androidx.core.app.NotificationCompat.MessagingStyle(me).addMessage(scamChat, 2L, null as androidx.core.app.Person?)) }
+        assertEquals(null, ChatListener.read(own))
+        assertEquals(null, ChatListener.read(chat { setContentTitle("WhatsApp"); setContentText("3 new messages") }))
+        assertEquals(null, ChatListener.read(chat { setContentTitle("WhatsApp"); setContentText(scamChat); setGroup("g"); setGroupSummary(true) }))
+        assertEquals("Rahul" to "see you at 5", ChatListener.read(chat { setContentTitle("Rahul"); setContentText("see you at 5") }))
+    }
+
+    @Test fun onlyMessagingAppsAreRead() {
+        assertEquals(setOf("com.google.android.apps.messaging", "com.samsung.android.messaging", "com.whatsapp", "com.whatsapp.w4b"), ChatListener.APPS.keys)
+    }
+
+    @Test fun anSmsAndItsNotificationCountAsOneMessage() {
+        assertTrue(Incoming.sameMessage(scamChat, "  " + scamChat.take(60).uppercase() + " "))
+        assertTrue(!Incoming.sameMessage("ok thanks", "ok thanks a lot for the money"))
+        val text = "${System.nanoTime()} $scamChat"
+        val first = Incoming.check(app, "VK-SBIBNK", text, "sms", 1L)
+        assertTrue("laptop answered: ${first?.error}", first?.level in setOf("Medium", "High", "Critical"))
+        assertTrue((first?.score ?: 0) in 0..100)
+        assertEquals(null, Incoming.check(app, "Contact name", text, "sms", 2L))
+    }
+
+    @Test fun aRealMessageIsNeverSentToTheOnlineCopyAndIsNotLost() {
+        store.serverUrl = Store.ONLINE_SERVER
+        try {
+            val item = Incoming.check(app, "Someone", "${System.nanoTime()} $scamChat", "sms", 1L)
+            assertEquals(null, item?.level)
+            assertTrue(item?.error.orEmpty().contains("Not checked"))
+            assertEquals(item?.text, store.recent().first().text)
+            assertEquals(0, Retry.unchecked(app))
+        } finally { store.serverUrl = Store.USB_SERVER }
+    }
+
+    @Test fun aWhatsAppScamIsCheckedAsASocialMessage() {
+        val item = Incoming.check(app, "Unknown", "${System.nanoTime()} $scamChat", "social", 1L)
+        assertEquals("social", item?.channel)
+        assertTrue(item?.level in setOf("Medium", "High", "Critical"))
+        assertEquals("social", store.recent().first().channel)
+    }
 }
