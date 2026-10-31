@@ -223,10 +223,26 @@ private fun HomeScreen(store: Store, note: String, onScan: () -> Unit, onEnter: 
         onDispose { context.unregisterReceiver(receiver) }
     }
 
+    var chatsOn by remember { mutableStateOf(true) }
+    LifecycleResumeEffect(Unit) {
+        chatsOn = NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
+        recent = store.recent()
+        onPauseOrDispose { }
+    }
+
     val bars = WindowInsets.safeDrawing.asPaddingValues()
     Box(Modifier.fillMaxSize()) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = bars.calculateTopPadding() + 12.dp, bottom = bars.calculateBottomPadding() + 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        if (!chatsOn) item {
+            Panel(padding = 14.dp) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("RCS and WhatsApp are not protected", fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = TextMain)
+                    Text("Many scam messages arrive this way. Allow SatarkPay scam check to read message notifications.", fontSize = 14.sp, color = TextSoft)
+                    PrimaryButton("Turn on") { context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
+                }
+            }
+        }
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(painterResource(R.drawable.ic_logo), contentDescription = "SatarkPay logo", modifier = Modifier.size(42.dp))

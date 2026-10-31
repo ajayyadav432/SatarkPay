@@ -3,6 +3,7 @@ package ai.satark.smsguard
 import android.app.Notification
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.util.Log
 import androidx.core.app.NotificationCompat
 
 /**
@@ -10,14 +11,30 @@ import androidx.core.app.NotificationCompat
  * permission this reads their notifications. Every other app's notifications are ignored without being opened.
  */
 class ChatListener : NotificationListenerService() {
-    override fun onNotificationPosted(sbn: StatusBarNotification) {
+    override fun onNotificationPosted(sbn: StatusBarNotification) = handle(sbn)
+
+    // A message that arrived before access was given, or while the service was stopped, is still in the notification shade.
+    override fun onListenerConnected() {
+        val since = System.currentTimeMillis() - WAITING_MS
+        activeNotifications?.filter { it.postTime >= since }?.forEach(::handle)
+    }
+
+    private fun handle(sbn: StatusBarNotification) {
         val channel = APPS[sbn.packageName] ?: return
-        val (sender, text) = read(sbn.notification) ?: return
+        val found = read(sbn.notification)
+        Log.i(TAG, "${sbn.packageName}: ${if (found == null) "not a message" else "message"}")   // never the text
+        val (sender, text) = found ?: return
         val context = applicationContext
-        Thread { Incoming.check(context, sender, text, channel, sbn.postTime) }.start()
+        Thread {
+            val item = Incoming.check(context, sender, text, channel, sbn.postTime)
+            if (item?.level != null) Retry.unchecked(context)
+        }.start()
     }
 
     companion object {
+        private const val TAG = "SatarkChats"
+        private const val WAITING_MS = 24 * 60 * 60 * 1000L
+
         /** The only apps read, and the channel the server is told. */
         val APPS = mapOf(
             "com.google.android.apps.messaging" to "sms",
