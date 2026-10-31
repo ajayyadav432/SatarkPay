@@ -69,7 +69,6 @@ object Notifier {
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
         val risky = item.level in setOf("Medium", "High", "Critical")
-        if (item.channel == "social" && !risky) return   // a busy WhatsApp must not fill the screen; these stay in the list
         val category = item.category?.takeIf { it.isNotBlank() && it != "None" }
 
         val title: String

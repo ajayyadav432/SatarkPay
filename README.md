@@ -48,7 +48,7 @@ Built with `cd android && ./gradlew assembleDebug`. Log in, or use a test login,
 - **Check message** and **Check link** check something pasted in.
 - **Scam feed** and **History**, the same as on the website, with history saved as CSV or JSON.
 - **Connection** chooses Online (the default, no cable), Laptop over Wi-Fi, or Laptop over USB cable.
-- **Message protection** checks incoming SMS, with the person's permission. With notification access turned on, it also checks RCS chats and WhatsApp messages from their notifications. Only Google Messages, Samsung Messages and WhatsApp are read. Messages go only to the team's laptop, and never to an `https` server such as the Vercel copy. In online mode they are listed as not checked.
+- **Message protection** checks incoming SMS, with the person's permission. With notification access turned on, it also checks RCS chats, WhatsApp messages and Gmail from their notifications, and shows a score for each. Only Google Messages, Samsung Messages, WhatsApp and Gmail are read. Messages go only to the team's laptop, and never to an `https` server such as the Vercel copy. In online mode they are listed as not checked.
 
 New to the project? Read the [Project Guide](docs/SatarkPay_Project_Guide.pdf). To test it, use the [Testing Guide](docs/SatarkPay_Testing_Guide.pdf).
 
@@ -236,7 +236,7 @@ docs/                demo script, judging Q&A, pitch deck
 
 - **Phone app (Android): scan a UPI QR.** Build with `cd android && ./gradlew assembleDebug`. Connect by USB and run `./run.sh phone` in a second terminal, or use `./run.sh wifi` and enter `http://<laptop-ip>:8000` under *Laptop connection*. Press *Scan UPI QR* and point it at a code on `http://localhost:8000/qr`, or share a QR picture to the app. It checks the payment and shows the decision and reasons. It never moves real money. A real UPI ID has no history in this system, so only its ID, amount and note are checked, and the app says so.
 - **Phone app (Android): SMS.** Enter the printed pairing code under *Laptop connection* and allow SMS. A real SMS then becomes context: a payment that follows it is scored with it.
-- **Phone app (Android): RCS and WhatsApp.** Under *Laptop connection*, press *Check RCS and WhatsApp too* and allow notification access for SatarkPay. Android gives apps no other way to see these messages. Only what the notification shows is read, so a muted chat is not checked. A message seen both as an SMS and as a notification counts once. Messages still in the notification shade when access is turned on are checked too, up to 24 hours old.
+- **Phone app (Android): RCS, WhatsApp and Gmail.** Under *Laptop connection*, press *Check RCS, WhatsApp and Gmail too* and allow notification access for SatarkPay. Android gives apps no other way to see these messages. Only what the notification shows is read, so a muted chat is not checked, and for Gmail only the sender, subject and preview are read, not the whole e-mail or its links. A message seen both as an SMS and as a notification counts once. Messages still in the notification shade when access is turned on are checked too, up to 24 hours old.
 - **Link Guard (Chrome or Edge).** Load `extension/` at `chrome://extensions` with *Developer mode* on. It marks risky links on any page and shows a warning before they open. The server must be running on this laptop.
 
 ## Data sources and facts

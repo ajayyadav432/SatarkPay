@@ -7,7 +7,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 
 /**
- * RCS chats and WhatsApp never reach SmsReceiver, because Android has no broadcast for them. With the person's
+ * RCS chats, WhatsApp and Gmail never reach SmsReceiver, because Android has no broadcast for them. With the person's
  * permission this reads their notifications. Every other app's notifications are ignored without being opened.
  */
 class ChatListener : NotificationListenerService() {
@@ -41,8 +41,9 @@ class ChatListener : NotificationListenerService() {
             "com.samsung.android.messaging" to "sms",
             "com.whatsapp" to "social",
             "com.whatsapp.w4b" to "social",
+            "com.google.android.gm" to "email",
         )
-        private val NOT_A_MESSAGE = Regex("""^\d+ (new )?messages?\b.*|^checking for new messages.*""", RegexOption.IGNORE_CASE)
+        private val NOT_A_MESSAGE = Regex("""^\d+ (new )?messages?\b.*|^checking for new (messages|mail).*""", RegexOption.IGNORE_CASE)
 
         /** The sender and text of the newest message, or null when this is not a message from someone else. */
         fun read(n: Notification): Pair<String, String>? {

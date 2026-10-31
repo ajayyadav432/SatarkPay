@@ -237,7 +237,7 @@ private fun HomeScreen(store: Store, note: String, onScan: () -> Unit, onEnter: 
         if (!chatsOn) item {
             Panel(padding = 14.dp) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("RCS and WhatsApp are not protected", fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = TextMain)
+                    Text("RCS, WhatsApp and Gmail are not protected", fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = TextMain)
                     Text("Many scam messages arrive this way. Allow SatarkPay scam check to read message notifications.", fontSize = 14.sp, color = TextSoft)
                     PrimaryButton("Turn on") { context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
                 }
@@ -369,8 +369,8 @@ private fun ConnectionScreen(store: Store, onBack: () -> Unit) {
             chatsOn = NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
             onPauseOrDispose { }
         }
-        Text(if (chatsOn) "✓ RCS and WhatsApp messages are being checked too." else "SMS only. RCS chats and WhatsApp are not being checked.", color = TextSoft, fontSize = 14.sp)
-        SecondaryButton(if (chatsOn) "Stop checking chats" else "Check RCS and WhatsApp too") {
+        Text(if (chatsOn) "✓ RCS, WhatsApp and Gmail messages are being checked too." else "SMS only. RCS chats, WhatsApp and Gmail are not being checked.", color = TextSoft, fontSize = 14.sp)
+        SecondaryButton(if (chatsOn) "Stop checking chats" else "Check RCS, WhatsApp and Gmail too") {
             context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
         }
         PrimaryButton("Test connection", icon = R.drawable.ic_ui_laptop, onClick = {

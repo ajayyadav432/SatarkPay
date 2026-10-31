@@ -282,7 +282,7 @@ class PayFlowTest {
     }
 
     @Test fun onlyMessagingAppsAreRead() {
-        assertEquals(setOf("com.google.android.apps.messaging", "com.samsung.android.messaging", "com.whatsapp", "com.whatsapp.w4b"), ChatListener.APPS.keys)
+        assertEquals(setOf("com.google.android.apps.messaging", "com.samsung.android.messaging", "com.whatsapp", "com.whatsapp.w4b", "com.google.android.gm"), ChatListener.APPS.keys)
     }
 
     @Test fun anSmsAndItsNotificationCountAsOneMessage() {
@@ -304,6 +304,16 @@ class PayFlowTest {
             assertEquals(item?.text, store.recent().first().text)
             assertEquals(0, Retry.unchecked(app))
         } finally { store.serverUrl = Store.USB_SERVER }
+    }
+
+    @Test fun aGmailNotificationIsReadAndCheckedAsAnEmail() {
+        val body = "${System.nanoTime()} $scamChat"
+        val n = chat { setContentTitle("SBI Support"); setContentText("Account blocked"); setStyle(androidx.core.app.NotificationCompat.BigTextStyle().bigText(body)) }
+        assertEquals("SBI Support" to body, ChatListener.read(n))
+        val item = Incoming.check(app, "SBI Support", body, "email", 1L)
+        assertEquals("email", item?.channel)
+        assertTrue(item?.level in setOf("Medium", "High", "Critical"))
+        assertEquals(null, ChatListener.read(chat { setContentTitle("Gmail"); setContentText("Checking for new mail") }))
     }
 
     @Test fun aWhatsAppScamIsCheckedAsASocialMessage() {
