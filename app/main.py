@@ -29,7 +29,7 @@ from app.analysis.scoring import level_rank
 from app.payments import i18n
 from app.payments.sample_feed import SAMPLE_POSTS
 from app.payments import models as pay_models
-from app.payments import scenarios, store
+from app.payments import mailwatch, scenarios, store
 from app.payments.geo import city_index
 from app.payments.live import ALLOWED_TPS, Live, PaymentRefused
 from ml.simulate import PERSONAS
@@ -55,7 +55,11 @@ async def lifespan(_: FastAPI):
     engine.start_thread()
     if config.env("SATARKPAY_AUTOSTART", "1") == "1":
         engine.running = True
+    # Its results are the laptop's own, so the online copy, which many people share, never watches a mailbox.
+    if not config.ON_VERCEL and not store.is_shared() and not config.env("SATARK_NO_MAILWATCH"):
+        mailwatch.start(_mail_checked)
     yield
+    mailwatch.stop()
     engine.shutdown()
 
 
@@ -871,6 +875,25 @@ def _ingest_token_ok(given: str | None) -> bool:
 @app.get("/api/health")
 def health():
     return {"status": "ok", "app": config.APP_NAME, "version": VERSION, "models": pay_models.ready()}
+
+
+def _mail_checked(text: str, sender: str | None, ref: str) -> None:
+    """One new e-mail from the inbox watcher. The result appears in History, under Email."""
+    key = f"email-watch:{ref}"
+    if key in _seen_ingest:
+        return
+    r = analyze(text, channel="email", sender=sender)
+    _seen_ingest[key] = {"level": r["level"], "score": r["score"]}
+    while len(_seen_ingest) > MAX_SEEN_INGEST:
+        _seen_ingest.pop(next(iter(_seen_ingest)))
+    action = "WARN" if level_rank(r["level"]) >= level_rank(config.WARN_FROM_LEVEL) else "ALLOW"
+    store.add_check(store.DEVICE, "device", "EMAIL", (sender or "Unknown sender")[:200], None, "", r["score"], r["level"], action, r.get("category") or "")     # the words themselves are not kept
+
+
+@app.get("/api/v1/mail-watch")
+def api_mail_watch(_: str = ADMIN):
+    """Whether the inbox watcher is on and working. Never the password."""
+    return {k: mailwatch.status[k] for k in ("enabled", "running", "last_check", "checked", "skipped", "error")}
 
 
 @app.get("/api/laptop-proof")

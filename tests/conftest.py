@@ -14,6 +14,7 @@ _TMP = tempfile.mkdtemp(prefix="satarkpay-test-")
 os.environ["SATARKPAY_DB"] = str(Path(_TMP) / "test.db")
 os.environ["SATARK_TOKEN"] = "test-pairing-code"
 os.environ["SATARKPAY_AUTOSTART"] = "0"
+os.environ["SATARK_NO_MAILWATCH"] = "1"   # tests never touch a real mailbox
 TEST_PASSWORD = "test-password"
 _salt = b"0123456789abcdef"
 _hash = "scrypt." + base64.urlsafe_b64encode(_salt).decode() + "." + base64.urlsafe_b64encode(hashlib.scrypt(TEST_PASSWORD.encode(), salt=_salt, n=2**14, r=8, p=1)).decode()

@@ -148,6 +148,8 @@ Where the words give it away, the other layers save it. Where only behaviour doe
 
 **Do you read RCS, WhatsApp and Gmail on the phone?** Only if the person allows notification access, and only from Google Messages, Samsung Messages, WhatsApp and Gmail. Gmail gives the sender, subject and preview, not the whole e-mail or its links. Other apps' notifications are ignored. A muted chat shows no notification, so it is not checked.
 
+**Can it check e-mail you never open?** Yes on a laptop, if the optional inbox watcher is given a mailbox. It reads new mail over a read-only IMAP connection and shows the score in History. It was tested on a local mail server. It is off on the online copy.
+
 **Do you send SMS to the cloud?** No. Incoming SMS and chat messages go only to the team's laptop. In online mode they are not sent anywhere, and a person can paste a message to check it.
 
 **Are the translations checked?** Not yet by native speakers. All numbers and names in a reason come from the same real values as the English.
